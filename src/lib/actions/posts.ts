@@ -1,17 +1,20 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole, requireRoleFresh, can } from "@/lib/rbac";
 import { postInput } from "@/lib/validation";
-import { uniqueSlug } from "@/lib/services/slug";
+import { slugify, uniqueSlug } from "@/lib/services/slug";
 import { runAction, type ActionState } from "./_result";
 import type { Prisma } from "@prisma/client";
 
 function parse(formData: FormData) {
+  const title = String(formData.get("title") ?? "");
+  const typedSlug = String(formData.get("slug") ?? "").trim();
   return postInput.parse({
-    title: formData.get("title"),
-    slug: formData.get("slug") || undefined,
+    title,
+    slug: typedSlug || slugify(title) || "untitled",
     excerpt: formData.get("excerpt") || null,
     body: formData.get("body") ? JSON.parse(String(formData.get("body"))) : undefined,
     coverImage: formData.get("coverImage") || null,
@@ -26,7 +29,8 @@ function parse(formData: FormData) {
 }
 
 export async function savePost(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  return runAction(async () => {
+  let nextUrl: string | null = null;
+  const result = await runAction(async () => {
     const id = String(formData.get("id") ?? "");
     const publishing = formData.get("status") === "PUBLISHED";
 
@@ -68,8 +72,11 @@ export async function savePost(_prev: ActionState, formData: FormData): Promise<
     }
 
     revalidatePath("/admin/posts");
+    nextUrl = `/admin/posts/${post.id}`;
     return { ok: true, message: publishing ? "Published." : "Saved." };
   });
+  if (result?.ok && nextUrl) redirect(nextUrl);
+  return result;
 }
 
 export async function deletePost(_prev: ActionState, formData: FormData): Promise<ActionState> {

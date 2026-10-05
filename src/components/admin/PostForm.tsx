@@ -39,6 +39,13 @@ export function PostForm({
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(savePost, null);
   const [status, setStatus] = useState(values.status);
+  const [title, setTitle] = useState(values.title);
+  const [slug, setSlug] = useState(values.slug);
+  const [excerpt, setExcerpt] = useState(values.excerpt);
+  const [tags, setTags] = useState(values.tags);
+  const detail = state && !state.ok && state.fieldErrors
+    ? Object.entries(state.fieldErrors).map(([name, messages]) => `${name}: ${messages?.[0] ?? "invalid"}`).join(" ")
+    : null;
 
   return (
     <form action={action} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
@@ -55,24 +62,24 @@ export function PostForm({
                 : "border-(--primary)/40 bg-(--primary)/10 text-(--primary)"
             }`}
           >
-            {state.ok ? state.message : state.error}
+            {state.ok ? state.message : detail || state.error}
           </p>
         ) : null}
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <div className="mb-4">
             <label className={label} htmlFor="title">Title</label>
-            <input id="title" name="title" defaultValue={values.title} required className={field} />
+            <input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} required className={field} />
           </div>
           <div className="mb-4">
             <label className={label} htmlFor="slug">
               Slug <span className="font-normal text-(--sub-text)">— leave blank to generate from the title</span>
             </label>
-            <input id="slug" name="slug" defaultValue={values.slug} className={field} />
+            <input id="slug" name="slug" value={slug} onChange={(e) => setSlug(e.target.value)} className={field} />
           </div>
           <div>
             <label className={label} htmlFor="excerpt">Excerpt</label>
-            <textarea id="excerpt" name="excerpt" rows={3} defaultValue={values.excerpt} className={field} />
+            <textarea id="excerpt" name="excerpt" rows={3} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className={field} />
           </div>
         </div>
 
@@ -132,7 +139,7 @@ export function PostForm({
           </div>
           <div className="mb-4">
             <label className={label} htmlFor="tags">Tags</label>
-            <input id="tags" name="tags" defaultValue={values.tags} placeholder="comma, separated" className={field} />
+            <input id="tags" name="tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" className={field} />
           </div>
           <CoverImageField defaultValue={values.coverImage} />
           <label className="flex items-center justify-between py-2.5 text-sm">
