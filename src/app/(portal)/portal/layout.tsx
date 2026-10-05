@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireSession, AuthError } from "@/lib/rbac";
@@ -38,7 +39,7 @@ export default async function PortalLayout({ children }: { children: React.React
           <Link href="/portal"><Brand size={36} /></Link>
           <nav className="flex gap-5 text-sm font-semibold">
             {links.map((l) => (
-              <Link key={l.href} href={l.href} className="text-(--sub-text) hover:text-(--body-text)">
+              <Link key={l.href} href={l.href as Route} className="text-(--sub-text) hover:text-(--body-text)">
                 {l.label}
               </Link>
             ))}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import Image from "next/image";
 import { getTrending, getUpcomingEvents, getNowPlaying, getListenLinks } from "@/lib/widgets";
 import { EventsCarousel } from "./EventsCarousel";
@@ -46,7 +47,7 @@ export async function WidgetSidebar() {
       {trending.length > 0 ? (
         <Widget title="Trending now">
           {trending.map((t) => (
-            <Link key={t.href} href={t.href} className="flex items-center gap-3.5 border-b border-(--border-strong) py-2.5 last:border-0">
+            <Link key={t.href} href={t.href as Route} className="flex items-center gap-3.5 border-b border-(--border-strong) py-2.5 last:border-0">
               <span className="w-8 shrink-0 text-center text-4xl font-black leading-none text-(--card-bg) [-webkit-text-stroke:2px_var(--border)]">
                 {t.rank}
               </span>

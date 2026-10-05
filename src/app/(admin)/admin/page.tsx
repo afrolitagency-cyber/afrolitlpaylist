@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { prisma } from "@/lib/prisma";
 import { requireRole, can } from "@/lib/rbac";
 import { AdminShell, StatusPill } from "@/components/admin/Shell";
@@ -41,7 +42,7 @@ export default async function AdminDashboard() {
       <h2 className="mb-4 text-lg font-bold">Needs your attention</h2>
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
         {queues.map((q) => (
-          <Link key={q.href} href={q.href} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5 hover:border-(--primary)">
+          <Link key={q.href} href={q.href as Route} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5 hover:border-(--primary)">
             <span className="text-sm font-semibold">{q.label}</span>
             <div className="mt-4 text-3xl font-black">{q.count}</div>
             <div className="mt-1 flex items-center justify-between text-sm text-(--sub-text)">

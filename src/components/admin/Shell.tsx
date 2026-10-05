@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { LogoMark } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { Role } from "@prisma/client";
@@ -59,7 +60,7 @@ export function AdminShell({
           {visible.map((i) => (
             <Link
               key={i.href}
-              href={i.href}
+              href={i.href as Route}
               className="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-semibold text-(--sub-text) hover:bg-(--surface-alt) hover:text-(--body-text)"
             >
               {i.label}

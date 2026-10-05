@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import type { NavItem } from "@/lib/nav";
 
 /** Animated hamburger + slide-in drawer. Shared by every theme — the items are
@@ -64,14 +65,14 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
                 </button>
                 <div className={`overflow-hidden transition-[max-height] duration-300 ${expanded === item.href ? "max-h-80" : "max-h-0"}`}>
                   {item.children.map((c) => (
-                    <Link key={c.href} href={c.href} onClick={() => setOpen(false)} className="block border-b border-(--border-strong) py-3 pl-4 text-[15px] font-semibold text-(--sub-text) hover:text-(--primary)">
+                    <Link key={c.href} href={c.href as Route} onClick={() => setOpen(false)} className="block border-b border-(--border-strong) py-3 pl-4 text-[15px] font-semibold text-(--sub-text) hover:text-(--primary)">
                       {c.label}
                     </Link>
                   ))}
                 </div>
               </div>
             ) : (
-              <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="flex min-h-[54px] items-center justify-between border-b border-(--border-strong) text-[22px] font-extrabold hover:text-(--primary)">
+              <Link key={item.href} href={item.href as Route} onClick={() => setOpen(false)} className="flex min-h-[54px] items-center justify-between border-b border-(--border-strong) text-[22px] font-extrabold hover:text-(--primary)">
                 {item.label}
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M9 6l6 6-6 6" /></svg>
               </Link>

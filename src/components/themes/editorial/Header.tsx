@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { Brand } from "@/components/ui/Logo";
 import { MobileNav } from "@/components/ui/MobileNav";
 import type { HeaderProps } from "../types";
@@ -19,12 +20,12 @@ export default function Header({ nav, identity }: HeaderProps) {
         <ul className="wrap flex h-[50px] items-center justify-center gap-7 text-[12.5px] font-bold uppercase tracking-wider">
           {nav.map((item) => (
             <li key={item.href} className="group relative">
-              <Link href={item.href} className="py-2 text-(--sub-text) hover:text-(--body-text)">{item.label}</Link>
+              <Link href={item.href as Route} className="py-2 text-(--sub-text) hover:text-(--body-text)">{item.label}</Link>
               {item.children?.length ? (
                 <ul className="invisible absolute left-0 top-full z-40 min-w-56 border border-(--border-strong) border-t-2 border-t-(--primary) bg-(--surface) py-1.5 opacity-0 transition group-hover:visible group-hover:opacity-100">
                   {item.children.map((c) => (
                     <li key={c.href}>
-                      <Link href={c.href} className="block px-4 py-2.5 text-[13px] normal-case tracking-normal text-(--sub-text) hover:bg-(--surface-alt) hover:text-(--body-text)">{c.label}</Link>
+                      <Link href={c.href as Route} className="block px-4 py-2.5 text-[13px] normal-case tracking-normal text-(--sub-text) hover:bg-(--surface-alt) hover:text-(--body-text)">{c.label}</Link>
                     </li>
                   ))}
                 </ul>

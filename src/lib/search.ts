@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -64,9 +65,9 @@ export async function searchAll(term: string, take = 10): Promise<SearchHit[]> {
   ];
 }
 
-export const HREF: Record<SearchHit["kind"], (slug: string) => string> = {
-  post: (s) => `/blog/${s}`,
-  artist: (s) => `/artists/${s}`,
-  episode: (s) => `/episodes/${s}`,
-  event: (s) => `/events/${s}`,
+export const HREF: Record<SearchHit["kind"], (slug: string) => Route> = {
+  post: (s) => `/blog/${s}` as Route,
+  artist: (s) => `/artists/${s}` as Route,
+  episode: (s) => `/episodes/${s}` as Route,
+  event: (s) => `/events/${s}` as Route,
 };

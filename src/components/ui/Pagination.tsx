@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 /** Window of page links around the current page — a thousand-post blog must not
  *  render a thousand numbers. */
@@ -12,7 +13,7 @@ export function Pagination({ page, pages, basePath, params = {} }: {
     for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
     if (n > 1) q.set("page", String(n));
     const s = q.toString();
-    return `${basePath}${s ? `?${s}` : ""}`;
+    return `${basePath}${s ? `?${s}` : ""}` as Route;
   };
 
   const from = Math.max(1, Math.min(page - 2, pages - 4));

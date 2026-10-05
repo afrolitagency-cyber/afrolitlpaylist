@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import Image from "next/image";
 import { getTrendingAlbums } from "@/lib/widgets";
 
@@ -12,7 +13,7 @@ export async function TrendingAlbums() {
       <h2 className="mb-4 text-xl font-black uppercase tracking-tight">Trending albums</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {albums.map((a) => (
-          <Link key={`${a.artistSlug}-${a.title}`} href={a.href} className="block">
+          <Link key={`${a.artistSlug}-${a.title}`} href={a.href as Route} className="block">
             <div className="relative mb-2 aspect-square overflow-hidden rounded-md bg-(--surface)">
               {a.cover ? <Image src={a.cover} alt="" fill sizes="200px" className="object-cover" /> : null}
             </div>
