@@ -10,7 +10,7 @@ export default function ArticleCard({ story, size = "md" }: ArticleCardProps) {
       className={`block overflow-hidden rounded-xl bg-(--card-bg) transition-transform hover:-translate-y-0.5 ${horizontal ? "flex items-center gap-3 p-2.5" : ""}`}
     >
       <div className={`relative overflow-hidden bg-(--surface) ${horizontal ? "h-[84px] w-[110px] shrink-0 rounded-lg" : size === "lg" ? "h-[380px]" : "h-[170px]"}`}>
-        {story.coverImage ? <Image src={story.coverImage} alt="" fill sizes="(max-width:1024px) 100vw, 60vw" className="object-cover" /> : null}
+        {story.coverImage ? <Image src={story.coverImage} alt="" fill sizes="(max-width:1024px) 100vw, 60vw" className="object-cover object-top" /> : null}
       </div>
       <div className={horizontal ? "min-w-0" : "p-4"}>
         {story.category ? <span className="text-xs font-bold uppercase tracking-wide text-(--primary)">{story.category}</span> : null}

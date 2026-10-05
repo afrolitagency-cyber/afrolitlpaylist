@@ -6,7 +6,7 @@ function Feature({ story, lead = false }: { story: Story; lead?: boolean }) {
   return (
     <Link href={`/blog/${story.slug}`} className="relative block overflow-hidden rounded-md">
       <div className={`relative bg-(--surface) ${lead ? "h-[340px]" : "h-[260px]"}`}>
-        {story.coverImage ? <Image src={story.coverImage} alt="" fill sizes="(max-width:1024px) 100vw, 40vw" className="object-cover" priority={lead} /> : null}
+        {story.coverImage ? <Image src={story.coverImage} alt="" fill sizes="(max-width:1024px) 100vw, 40vw" className="object-cover object-top" priority={lead} /> : null}
       </div>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/92 to-transparent p-5">
         <span className="inline-block rounded-sm bg-(--primary) px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-white">

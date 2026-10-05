@@ -73,7 +73,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
       {post.coverImage ? (
         <div className="relative mx-auto my-7 h-[clamp(220px,40vw,420px)] max-w-[980px] overflow-hidden rounded-xl">
-          <Image src={post.coverImage} alt="" fill sizes="980px" className="object-cover" priority />
+          <Image src={post.coverImage} alt="" fill sizes="980px" className="object-cover object-top" priority />
         </div>
       ) : null}
 

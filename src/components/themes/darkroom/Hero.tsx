@@ -9,7 +9,7 @@ export default function Hero({ lead }: HeroProps) {
   return (
     <section className="relative my-7 overflow-hidden rounded-xl">
       <div className="relative h-[clamp(320px,45vw,440px)] bg-(--surface)">
-        {lead.coverImage ? <Image src={lead.coverImage} alt="" fill sizes="100vw" className="object-cover" priority /> : null}
+        {lead.coverImage ? <Image src={lead.coverImage} alt="" fill sizes="100vw" className="object-cover object-top" priority /> : null}
       </div>
       <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/90 via-black/40 to-transparent p-6 sm:p-10">
         <div>
