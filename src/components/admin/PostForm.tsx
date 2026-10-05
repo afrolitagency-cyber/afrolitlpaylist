@@ -5,6 +5,7 @@ import type { PartialBlock } from "@blocknote/core";
 import { savePost } from "@/lib/actions/posts";
 import type { ActionState } from "@/lib/actions/_result";
 import { BlockEditor } from "./BlockEditor";
+import { CoverImageField } from "./CoverImageField";
 
 type Option = { id: string; name: string };
 
@@ -133,10 +134,7 @@ export function PostForm({
             <label className={label} htmlFor="tags">Tags</label>
             <input id="tags" name="tags" defaultValue={values.tags} placeholder="comma, separated" className={field} />
           </div>
-          <div className="mb-4">
-            <label className={label} htmlFor="coverImage">Cover image URL</label>
-            <input id="coverImage" name="coverImage" defaultValue={values.coverImage} placeholder="https://res.cloudinary.com/…" className={field} />
-          </div>
+          <CoverImageField defaultValue={values.coverImage} />
           <label className="flex items-center justify-between py-2.5 text-sm">
             <span>Feature on homepage</span>
             <input type="checkbox" name="featured" defaultChecked={values.featured} className="size-4 accent-(--primary)" />
