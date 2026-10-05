@@ -1,0 +1,540 @@
+// AfroLit Playlist — data model
+// Conventions: cuid ids, createdAt/updatedAt everywhere, enums for every status,
+// money/counters as Int, rich content as Json (block JSON, never HTML).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Neon issued one pooled connection string. There is no separate direct host.
+  // directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────── auth
+
+enum Role {
+  ADMIN
+  EDITOR
+  ARTIST
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String?
+  passwordHash String?
+  role         Role       @default(ARTIST)
+  status       UserStatus @default(INVITED)
+  lastActiveAt DateTime?
+
+  artist        Artist?
+  posts         Post[]
+  reviewEvents  ArtistReviewEvent[] @relation("ReviewActor")
+  revisions     PostRevision[]
+  invitesIssued Invite[]            @relation("InviteIssuer")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role, status])
+}
+
+model Invite {
+  id        String   @id @default(cuid())
+  email     String
+  role      Role     @default(ARTIST)
+  tokenHash String   @unique // store the hash, never the token
+  artistId  String?
+  issuedById String?
+  issuedBy  User?    @relation("InviteIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  expiresAt DateTime
+  acceptedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// ─────────────────────────────────────────────── artists
+
+enum ArtistStatus {
+  DRAFT
+  PENDING
+  CHANGES_REQUESTED
+  LIVE
+  REJECTED
+}
+
+model Artist {
+  id     String @id @default(cuid())
+  slug   String @unique
+  name   String
+
+  // nullable: admin can create a profile shell before anyone claims it
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  genre          String?
+  location       String?
+  bio            String?  @db.Text
+  coverImage     String?
+  avatarImage    String?
+  streamEmbedUrl String?
+  socials        Json? // { instagram, x, youtube, spotify, appleMusic, audiomack }
+  monthlyListeners Int?
+  verified       Boolean  @default(false)
+
+  status         ArtistStatus @default(DRAFT)
+  // single open review: the working copy, overwritten on each resubmission
+  pendingProfile Json?
+  reviewNote     String?      @db.Text
+  submittedAt    DateTime?
+
+  discography  Discography[]
+  moments      Moment[]
+  stories      ArtistStory[]
+  posts        Post[]
+  events       Event[]             @relation("EventLineup")
+  galleryItems GalleryImage[]
+  reviewEvents ArtistReviewEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([name])
+}
+
+enum ReviewDecision {
+  SUBMITTED
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+}
+
+/// Append-only audit trail. The blob above is live working state;
+/// this is what the admin review screen's history panel reads.
+model ArtistReviewEvent {
+  id       String         @id @default(cuid())
+  artistId String
+  artist   Artist         @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  decision ReviewDecision
+  note     String?        @db.Text
+  snapshot Json?
+  actorId  String?
+  actor    User?          @relation("ReviewActor", fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt DateTime      @default(now())
+
+  @@index([artistId, createdAt])
+}
+
+enum ReleaseType {
+  SINGLE
+  EP
+  ALBUM
+  MIXTAPE
+}
+
+/// Artists edit this themselves and it publishes immediately (no review).
+/// Admin can unpublish any row as the safety valve.
+model Discography {
+  id          String      @id @default(cuid())
+  artistId    String
+  artist      Artist      @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  title       String
+  type        ReleaseType @default(SINGLE)
+  coverArt    String?
+  releaseDate DateTime?
+  streamUrl   String?
+  published   Boolean     @default(true)
+  tracks      Track[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([artistId, releaseDate])
+}
+
+model Track {
+  id            String      @id @default(cuid())
+  discographyId String
+  discography   Discography @relation(fields: [discographyId], references: [id], onDelete: Cascade)
+  title         String
+  durationSec   Int?
+  position      Int         @default(0)
+  streamUrl     String?
+
+  @@index([discographyId, position])
+}
+
+/// Editor-curated only — artists cannot touch these.
+model Moment {
+  id        String   @id @default(cuid())
+  artistId  String
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  mediaUrl  String
+  mediaType String   @default("image")
+  caption   String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([artistId, position])
+}
+
+model ArtistStory {
+  id          String    @id @default(cuid())
+  artistId    String
+  artist      Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  title       String
+  body        Json?
+  coverImage  String?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([artistId, publishedAt])
+}
+
+// ─────────────────────────────────────────────── editorial
+
+enum ContentStatus {
+  DRAFT
+  PENDING
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model Category {
+  id    String @id @default(cuid())
+  slug  String @unique
+  name  String
+  posts Post[]
+}
+
+model Post {
+  id         String        @id @default(cuid())
+  slug       String        @unique
+  title      String
+  excerpt    String?       @db.Text
+  body       Json? // block JSON from the editor — never HTML
+  coverImage String?
+  tags       String[]
+  status     ContentStatus @default(DRAFT)
+  featured   Boolean       @default(false)
+  commentsOn Boolean       @default(true)
+  viewCount  Int           @default(0)
+  publishedAt DateTime?
+
+  authorId   String?
+  author     User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  artistId   String?
+  artist     Artist?   @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  comments  Comment[]
+  revisions PostRevision[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@index([artistId])
+}
+
+/// Snapshot on each publish — not keystroke history.
+model PostRevision {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  snapshot  Json
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+model Comment {
+  id        String           @id @default(cuid())
+  postId    String
+  post      Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  body      String           @db.Text
+  status    ModerationStatus @default(PENDING)
+  ipHash    String?
+  createdAt DateTime         @default(now())
+
+  @@index([status, createdAt])
+  @@index([postId, status])
+}
+
+// ─────────────────────────────────────────────── episodes
+
+model Episode {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  excerpt     String?       @db.Text
+  showNotes   Json?
+  audioUrl    String?
+  coverImage  String?
+  durationSec Int?
+  season      Int?
+  number      Int?
+  status      ContentStatus @default(DRAFT)
+  featured    Boolean       @default(false)
+  commentsOn  Boolean       @default(true)
+  spotifyUrl  String?
+  appleUrl    String?
+  youtubeUrl  String?
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+// ─────────────────────────────────────────────── events
+
+/// Groups recurring programmes (e.g. AfroQueens Camp) so the nav dropdown
+/// populates itself — adding a camp event needs no nav edit and no deploy.
+model EventSeries {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String? @db.Text
+  coverImage  String?
+  showInNav   Boolean @default(false)
+  position    Int     @default(0)
+  events      Event[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  description String?       @db.Text
+  coverImage  String?
+  startsAt    DateTime
+  doorsAt     DateTime?
+  timezone    String        @default("Africa/Lagos")
+  venue       String?
+  address     String?
+  country     String?
+  status      ContentStatus @default(DRAFT)
+
+  seriesId String?
+  series   EventSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  lineup   Artist[]     @relation("EventLineup")
+
+  registrationOpen Boolean @default(false)
+  registrationUrl  String?
+  capacity         Int?
+  soldOut          Boolean @default(false)
+  calendarExport   Boolean @default(true)
+
+  registrations EventRegistration[]
+  galleryItems  GalleryImage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, startsAt])
+  @@index([seriesId])
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, email])
+}
+
+// ─────────────────────────────────────────────── gallery & media
+
+model GalleryCollection {
+  id     String         @id @default(cuid())
+  slug   String         @unique
+  name   String
+  images GalleryImage[]
+}
+
+model GalleryImage {
+  id        String             @id @default(cuid())
+  url       String
+  caption   String?
+  credit    String?
+  altText   String?
+  published Boolean            @default(false)
+  featured  Boolean            @default(false)
+  position  Int                @default(0)
+
+  collectionId String?
+  collection   GalleryCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  eventId      String?
+  event        Event?             @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  artistId     String?
+  artist       Artist?            @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([published, position])
+}
+
+model MediaAsset {
+  id         String   @id @default(cuid())
+  url        String
+  publicId   String?  @unique // Cloudinary / Supabase key
+  kind       String   @default("image") // image | audio | video
+  mimeType   String?
+  bytes      Int?
+  width      Int?
+  height     Int?
+  uploadedById String?
+  createdAt  DateTime @default(now())
+
+  @@index([kind, createdAt])
+}
+
+// ─────────────────────────────────────────────── newsletter & contact
+
+enum SubscriberStatus {
+  PENDING
+  CONFIRMED
+  UNSUBSCRIBED
+}
+
+model NewsletterSubscriber {
+  id          String           @id @default(cuid())
+  email       String           @unique
+  status      SubscriberStatus @default(PENDING)
+  tags        String[]
+  tokenHash   String?          @unique
+  confirmedAt DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@index([status])
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  subject     String
+  previewText String?
+  fromName    String?
+  fromEmail   String?
+  body        Json?
+  audienceTag String?
+  status      CampaignStatus @default(DRAFT)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  recipients  Int?
+  opens       Int            @default(0)
+  clicks      Int            @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, scheduledAt])
+}
+
+enum MessageStatus {
+  NEW
+  OPEN
+  REPLIED
+  RESOLVED
+}
+
+model ContactMessage {
+  id         String        @id @default(cuid())
+  name       String
+  email      String
+  subject    String?
+  body       String        @db.Text
+  kind       String?       // artist submission | press | event | general
+  status     MessageStatus @default(NEW)
+  assignedToId String?
+  createdAt  DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+// ─────────────────────────────────────────────── site config
+
+/// Single source of truth for the active theme, identity and nav.
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+enum WidgetType {
+  TRENDING
+  UPCOMING_EVENTS
+  NOW_PLAYING
+  LISTEN_ON
+  TRENDING_ALBUMS
+}
+
+model Widget {
+  id       String     @id @default(cuid())
+  type     WidgetType
+  title    String?
+  config   Json?
+  enabled  Boolean    @default(true)
+  position Int        @default(0)
+
+  @@index([enabled, position])
+}
+
+/// Admin-editable transactional emails. Falls back to built-in copy when a key
+/// has no row, so a missing template can never block a send.
+model EmailTemplate {
+  key       String   @id // event.registration | artist.invite | artist.changes | artist.approved | newsletter.confirm
+  name      String
+  subject   String
+  body      String   @db.Text // supports {{placeholders}}
+  updatedAt DateTime @updatedAt
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  postId    String?
+  createdAt DateTime @default(now())
+
+  @@index([path, createdAt])
+}

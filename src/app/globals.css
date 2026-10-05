@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Design tokens. Red is the ONLY accent — it marks actions, active nav and
+   category labels, nothing else. Flat surfaces: no shadows, no glassmorphism. */
+:root {
+  --primary: #e50914;
+  --accent-hover: #c11119;
+  --accent-pressed: #a80d15;
+  --ink: #000000;
+  --surface: #161616;
+  --surface-alt: #232323;
+  --border: #808080;
+  --border-strong: #5f5f5f;
+  --muted: #b3b3b3;
+  --rounded-sm: 4px;
+  --rounded-md: 8px;
+  --rounded-lg: 12px;
+
+  --body-bg: #000000;
+  --body-text: #ffffff;
+  --card-bg: var(--surface-alt);
+  --sub-text: var(--muted);
+  --header-bg: var(--ink);
+  --footer-text: rgba(255, 255, 255, 0.7);
+  --input-bg: rgba(0, 0, 0, 0.7);
+}
+
+:root[data-appearance="light"] {
+  --body-bg: #ffffff;
+  --body-text: #221f1f;
+  --card-bg: #f4f4f4;
+  --sub-text: #5f5f5f;
+  --header-bg: #ffffff;
+  --border: #d8d8d8;
+  --border-strong: #c9c9c9;
+  --footer-text: #5f5f5f;
+  --input-bg: #f4f4f4;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--body-bg);
+  color: var(--body-text);
+  font-family: var(--font-sans), "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* Shared page container — one definition, every template. */
+.wrap { max-width: 1280px; margin-inline: auto; padding-inline: 28px; }
+@media (max-width: 768px) { .wrap { padding-inline: 20px; } }
+@media (max-width: 480px) { .wrap { padding-inline: 16px; } }
+
+/* A grid child defaults to min-width:auto, which lets wide content (album
+   strips, discography grids) force a column past the viewport. */
+main, aside, .grid > * { min-width: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
