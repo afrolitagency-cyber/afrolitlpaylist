@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, requireRoleFresh, can } from "@/lib/rbac";
 import { THEME_KEYS } from "@/components/themes/registry";
 import { SETTING_KEYS } from "@/lib/settings";
+import { normalizeEmbedUrl } from "@/lib/embedUrl";
 import { createInvite } from "@/lib/services/invite";
 import { sendArtistInvite } from "@/lib/services/email";
 import { runAction, type ActionState } from "./_result";
@@ -86,6 +87,37 @@ export async function saveIdentity(_prev: ActionState, formData: FormData): Prom
 
     revalidatePath("/", "layout");
     return { ok: true, message: "Site identity saved." };
+  });
+}
+
+const EMBED_LIMIT = 12;
+
+export async function saveEmbed(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await requireRoleFresh(...can.manageSettings);
+    const titles = formData.getAll("title").map((value) => String(value).trim().slice(0, 80));
+    const urls = formData.getAll("url").map((value) => String(value).trim().slice(0, 2000));
+    const items: { title: string; url: string }[] = [];
+
+    for (let i = 0; i < Math.max(titles.length, urls.length); i++) {
+      const raw = urls[i] ?? "";
+      const title = titles[i] ?? "";
+      if (!raw && !title) continue;
+      const url = normalizeEmbedUrl(raw);
+      if (!url) return { ok: false, error: "Each player needs a Spotify, YouTube, or Apple Music address." };
+      items.push({ title, url });
+    }
+
+    if (items.length > EMBED_LIMIT) return { ok: false, error: "Twelve players is the limit." };
+
+    await prisma.siteSetting.upsert({
+      where: { key: SETTING_KEYS.embed },
+      create: { key: SETTING_KEYS.embed, value: { items } },
+      update: { value: { items } },
+    });
+
+    revalidatePath("/");
+    return { ok: true, message: items.length ? "Sidebar players saved." : "Sidebar players removed." };
   });
 }
 

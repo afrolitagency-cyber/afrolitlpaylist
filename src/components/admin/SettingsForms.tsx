@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { setTheme, saveIdentity } from "@/lib/actions/admin";
+import { setTheme, saveIdentity, saveEmbed } from "@/lib/actions/admin";
 import type { ActionState } from "@/lib/actions/_result";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
@@ -84,6 +84,58 @@ export function IdentityForm({
         className="rounded bg-(--primary) px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
         {pending ? "Saving…" : "Save settings"}
       </button>
+    </form>
+  );
+}
+
+type EmbedRow = { title: string; url: string };
+
+export function EmbedForm({ values }: { values: EmbedRow[] }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(saveEmbed, null);
+  const [rows, setRows] = useState<EmbedRow[]>(values.length ? values : [{ title: "", url: "" }]);
+
+  function update(index: number, key: keyof EmbedRow, value: string) {
+    setRows((current) => current.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
+  }
+
+  return (
+    <form action={action}>
+      <Message state={state} />
+      <p className="mb-4 text-sm text-(--sub-text)">
+        Add a Spotify or YouTube address for each player. They stack in this order on the homepage sidebar. Paste the address or the whole iframe.
+      </p>
+      <div className="mb-4 space-y-3">
+        {rows.map((row, index) => (
+          <div key={index} className="rounded-lg border border-(--border-strong) p-3">
+            <div className="mb-3">
+              <label className={label} htmlFor={`embed-title-${index}`}>Title</label>
+              <input id={`embed-title-${index}`} name="title" value={row.title} onChange={(e) => update(index, "title", e.target.value)}
+                placeholder="Valentine's Special" className={field} />
+            </div>
+            <div>
+              <label className={label} htmlFor={`embed-url-${index}`}>Player address</label>
+              <input id={`embed-url-${index}`} name="url" value={row.url} onChange={(e) => update(index, "url", e.target.value)}
+                placeholder="https://open.spotify.com/… or a YouTube embed" className={field} />
+            </div>
+            {rows.length > 1 ? (
+              <button type="button" onClick={() => setRows((current) => current.filter((_, i) => i !== index))}
+                className="mt-3 text-xs font-bold text-(--primary)">
+                Remove
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2.5">
+        <button type="button" onClick={() => setRows((current) => [...current, { title: "", url: "" }])}
+          className="rounded border border-(--border-strong) px-5 py-2.5 text-sm font-semibold">
+          Add another
+        </button>
+        <button type="submit" disabled={pending}
+          className="rounded bg-(--primary) px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+          {pending ? "Saving…" : "Save players"}
+        </button>
+      </div>
     </form>
   );
 }

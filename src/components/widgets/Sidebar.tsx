@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { Route } from "next";
 import Image from "next/image";
 import { getTrending, getUpcomingEvents, getNowPlaying, getListenLinks } from "@/lib/widgets";
+import { getEmbedSetting } from "@/lib/settings";
+import { normalizeEmbedUrl } from "@/lib/embedUrl";
 import { EventsCarousel } from "./EventsCarousel";
 import { NowPlayingWidget } from "./NowPlayingWidget";
 import { NewsletterSignup } from "@/components/public/NewsletterSignup";
@@ -23,12 +25,17 @@ const SERVICE = {
 /** The widget rail shared by every template. Each widget hides itself when it
  *  has no data, so a new site shows a clean column rather than empty boxes. */
 export async function WidgetSidebar() {
-  const [trending, events, nowPlaying, listen] = await Promise.all([
+  const [trending, events, nowPlaying, listen, embedSetting] = await Promise.all([
     getTrending(),
     getUpcomingEvents(),
     getNowPlaying(),
     getListenLinks(),
+    getEmbedSetting(),
   ]);
+  const embeds = embedSetting.flatMap((item) => {
+    const url = normalizeEmbedUrl(item.url);
+    return url ? [{ title: item.title.trim() || "Listen", url }] : [];
+  });
 
   return (
     <aside className="flex flex-col gap-5">
@@ -43,6 +50,21 @@ export async function WidgetSidebar() {
           </button>
         </form>
       </Widget>
+
+      {embeds.map((item, index) => (
+        <Widget key={`${item.url}-${index}`} title={item.title}>
+          <iframe
+            src={item.url}
+            title={item.title}
+            className={item.url.includes("youtube.com/embed/") && !item.url.includes("videoseries")
+              ? "aspect-video h-auto w-full rounded-lg border-0"
+              : "h-[352px] w-full rounded-lg border-0"}
+            loading="lazy"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </Widget>
+      ))}
 
       {trending.length > 0 ? (
         <Widget title="Trending now">
