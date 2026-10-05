@@ -198,9 +198,11 @@ Full schema: `prisma/schema.prisma`. The parts that aren't obvious:
 
 | Path | Schedule | Does |
 | --- | --- | --- |
-| `/api/cron/publish` | every 10 min | flips SCHEDULED → PUBLISHED |
-| `/api/cron/newsletter` | every 5 min | sends due campaigns in batches |
-| `/api/cron/keepalive` | every 6 h | keeps Neon warm |
+| `/api/cron/publish` | daily, 08:00 UTC | flips SCHEDULED → PUBLISHED |
+| `/api/cron/newsletter` | daily, 09:00 UTC | sends due campaigns in batches |
+| `/api/cron/keepalive` | daily, 12:00 UTC | `SELECT 1` while the app is deployed |
+
+Hobby only accepts a cron that runs once a day. While the Node server is running, the app also pings Neon every 15 minutes. Neon free still suspends after 5 minutes of quiet, so the database sleeps between those pings.
 
 Serverless has no long-running timer waiting to publish at 10am, so scheduling
 only works because `publish` polls. The newsletter job marks a campaign `SENDING`
