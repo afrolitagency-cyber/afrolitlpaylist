@@ -19,7 +19,10 @@ export async function inviteUser(_prev: ActionState, formData: FormData): Promis
 
     const token = await createInvite(email, undefined, actor.id);
     await prisma.invite.updateMany({ where: { email, acceptedAt: null }, data: { role } });
-    await sendArtistInvite(email, token);
+    const sent = await sendArtistInvite(email, token);
+    if (!sent) {
+      return { ok: false, error: "The invite was saved, but the email did not send. Check Resend, then send it again." };
+    }
 
     revalidatePath("/admin/users");
     return { ok: true, message: `Invite sent to ${email}.` };

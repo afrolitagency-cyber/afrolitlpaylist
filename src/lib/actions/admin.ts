@@ -133,7 +133,10 @@ export async function inviteArtist(_prev: ActionState, formData: FormData): Prom
       : null;
 
     const token = await createInvite(email, artistId, actor.id);
-    await sendArtistInvite(email, token, artist?.name);
+    const sent = await sendArtistInvite(email, token, artist?.name);
+    if (!sent) {
+      return { ok: false, error: "The invite was saved, but the email did not send. Check Resend, then send it again." };
+    }
 
     revalidatePath("/admin/artists");
     revalidateTag("artists");

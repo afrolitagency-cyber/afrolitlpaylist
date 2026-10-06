@@ -60,6 +60,7 @@ export const eventInput = z.object({
   capacity: z.number().int().positive().optional().nullable(),
   soldOut: z.boolean().default(false),
   status: z.enum(["DRAFT", "SCHEDULED", "PUBLISHED", "ARCHIVED"]),
+  coverImage: z.string().url().optional().nullable(),
 });
 
 export const commentInput = z.object({

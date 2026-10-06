@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { Pagination } from "@/components/ui/Pagination";
 
@@ -49,9 +50,15 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
         <div className="space-y-3.5">
           {events.map((e: {
             id: string; slug: string; title: string; venue: string | null; startsAt: Date; soldOut: boolean;
-            registrationOpen: boolean; series: { name: string; slug: string } | null; lineup: { name: string; slug: string }[];
+            coverImage: string | null; registrationOpen: boolean;
+            series: { name: string; slug: string } | null; lineup: { name: string; slug: string }[];
           }) => (
             <div key={e.id} className="flex flex-wrap items-center gap-5 rounded-xl bg-(--card-bg) p-5">
+              {e.coverImage ? (
+                <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-(--surface)">
+                  <Image src={e.coverImage} alt="" fill sizes="112px" className="object-cover" />
+                </div>
+              ) : null}
               <div className="w-20 shrink-0 border-r border-(--border-strong) pr-4 text-center">
                 <div className="text-xs font-extrabold uppercase text-(--primary)">
                   {e.startsAt.toLocaleDateString("en-GB", { month: "short" })}

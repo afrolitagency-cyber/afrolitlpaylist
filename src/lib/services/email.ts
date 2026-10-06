@@ -17,7 +17,11 @@ async function send({ to, subject, html }: Mail): Promise<boolean> {
     return false;
   }
   try {
-    await resend.emails.send({ from: FROM, to, subject, html });
+    const result = await resend.emails.send({ from: FROM, to, subject, html });
+    if (result.error) {
+      console.error("[email] send failed", result.error);
+      return false;
+    }
     return true;
   } catch (err) {
     console.error("[email] send failed", err);

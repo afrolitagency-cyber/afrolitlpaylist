@@ -32,6 +32,7 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
       capacity: formData.get("capacity") ? Number(formData.get("capacity")) : null,
       soldOut: formData.get("soldOut") === "on",
       status: formData.get("status"),
+      coverImage: formData.get("coverImage") || null,
     });
 
     const slug = await uniqueSlug("event", data.slug || data.title, id || undefined);
@@ -62,6 +63,7 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
     revalidateTag("events");
     revalidatePath("/admin/events");
     revalidatePath("/events");
+    revalidatePath("/");
     revalidatePath(`/events/${event.slug}`);
     if (event.seriesId) revalidatePath("/", "layout"); // the nav dropdown is built from series events
     return { ok: true, message: publishing ? "Event published." : "Event saved." };
