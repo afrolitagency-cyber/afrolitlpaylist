@@ -1,6 +1,10 @@
+import { Suspense } from "react";
 import { getNav } from "@/lib/nav";
 import { getActiveTheme, getIdentity } from "@/lib/settings";
 import { loadTheme } from "@/components/themes/registry";
+import { ConsentBanner } from "@/components/public/ConsentBanner";
+import { ConsentLink } from "@/components/public/ConsentLink";
+import { GoogleAnalytics } from "@/components/public/GoogleAnalytics";
 
 /** The active template wraps every public page. Switching it in admin changes
  *  the whole site on the next revalidation — no redeploy. */
@@ -14,6 +18,14 @@ export default async function PublicLayout({ children }: { children: React.React
       <Header nav={nav} identity={identity} />
       <main id="main">{children}</main>
       <Footer nav={nav} identity={identity} />
+      <ConsentLink />
+      {/* useSearchParams in a statically generated route needs a boundary, or
+          the build fails with "useSearchParams() should be wrapped in a
+          suspense boundary". */}
+      <Suspense fallback={null}>
+        <GoogleAnalytics />
+      </Suspense>
+      <ConsentBanner />
     </>
   );
 }

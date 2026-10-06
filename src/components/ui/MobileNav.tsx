@@ -32,7 +32,7 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
         aria-expanded={open}
         aria-controls="mobile-drawer"
         aria-label={open ? "Close menu" : "Open menu"}
-        className="relative z-[70] h-11 w-11 lg:hidden"
+        className={`relative z-[70] h-11 w-11 lg:hidden ${open ? "invisible" : ""}`}
       >
         <span className={`absolute left-[11px] h-0.5 w-[22px] rounded bg-current transition-all duration-300 ${open ? "top-[21px] rotate-45" : "top-[14px]"}`} />
         <span className={`absolute left-[11px] top-[21px] h-0.5 rounded bg-current transition-all duration-200 ${open ? "w-0 opacity-0" : "w-[15px]"}`} />
@@ -41,15 +41,21 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
 
       <div
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-40 bg-black/60 transition-opacity lg:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`fixed inset-0 z-[70] bg-black/60 transition-opacity lg:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
         aria-hidden
       />
       <nav
         id="mobile-drawer"
         aria-label="Main menu"
         aria-hidden={!open}
-        className={`fixed right-0 top-0 z-50 flex h-[100dvh] w-[min(380px,88vw)] flex-col overflow-y-auto border-l border-(--border-strong) bg-(--header-bg) px-6 pb-7 pt-20 transition-transform duration-500 lg:hidden ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed right-0 top-0 z-[80] flex h-[100dvh] w-[min(380px,88vw)] flex-col overflow-y-auto border-l border-(--border-strong) bg-(--header-bg) px-6 pb-7 pt-3 transition-transform duration-500 lg:hidden ${open ? "translate-x-0" : "translate-x-full"}`}
       >
+        <div className="flex justify-end">
+          <button type="button" onClick={() => setOpen(false)} aria-label="Close menu" className="relative h-11 w-11">
+            <span className="absolute left-[11px] top-[21px] h-0.5 w-[22px] rotate-45 rounded bg-current" />
+            <span className="absolute left-[11px] top-[21px] h-0.5 w-[22px] -rotate-45 rounded bg-current" />
+          </button>
+        </div>
         <div className="flex flex-col">
           {nav.map((item) =>
             item.children?.length ? (

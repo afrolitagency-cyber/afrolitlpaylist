@@ -7,6 +7,7 @@ import { normalizeEmbedUrl } from "@/lib/embedUrl";
 import { EventsCarousel } from "./EventsCarousel";
 import { NowPlayingWidget } from "./NowPlayingWidget";
 import { NewsletterSignup } from "@/components/public/NewsletterSignup";
+import { TrackedExternalLink } from "@/components/public/TrackedExternalLink";
 
 function Widget({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -96,7 +97,7 @@ export async function WidgetSidebar() {
       {listen.length > 0 ? (
         <Widget title="Listen on">
           {listen.map((l) => (
-            <a key={l.service} href={l.href} target="_blank" rel="noopener noreferrer"
+            <TrackedExternalLink key={l.service} href={l.href} name="listen_click" entityId={l.service}
               className="mb-2.5 flex items-center gap-3 rounded-lg border border-(--border-strong) bg-(--input-bg) p-3.5 last:mb-0">
               <span className={`grid size-9 shrink-0 place-items-center rounded-lg text-white ${SERVICE[l.service].bg}`}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d={SERVICE[l.service].icon} /></svg>
@@ -105,7 +106,7 @@ export async function WidgetSidebar() {
                 <b className="block truncate text-sm">{l.label}</b>
                 <span className="text-xs text-(--sub-text)">{l.sub}</span>
               </span>
-            </a>
+            </TrackedExternalLink>
           ))}
         </Widget>
       ) : null}

@@ -6,6 +6,7 @@ import { requireRoleFresh, requireOwnArtist, can } from "@/lib/rbac";
 import { artistProfileInput, reviewDecisionInput } from "@/lib/validation";
 import { approve, reject, requestChanges, submitForReview } from "@/lib/services/review";
 import { sendChangesRequested, sendProfileApproved } from "@/lib/services/email";
+import { track } from "@/lib/analytics";
 import { runAction, type ActionState } from "./_result";
 
 /** Artist-side: save changes into the pending blob and submit for review. */
@@ -31,6 +32,7 @@ export async function submitProfile(_prev: ActionState, formData: FormData): Pro
     await submitForReview(artistId, data);
     revalidatePath("/portal/profile");
     revalidatePath("/admin/artists");
+    void track({ name: "artist_submit_profile", entityId: artistId, path: "/portal/profile" });
     return { ok: true, message: "Submitted for review." };
   });
 }

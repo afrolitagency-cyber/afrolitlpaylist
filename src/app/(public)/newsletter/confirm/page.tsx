@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { track } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Confirm your subscription" };
@@ -17,6 +18,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
         where: { id: sub.id },
         data: { status: "CONFIRMED", confirmedAt: new Date(), tokenHash: null },
       });
+      void track({ name: "newsletter_confirm", path: "/newsletter/confirm" });
       ok = true;
     }
   }

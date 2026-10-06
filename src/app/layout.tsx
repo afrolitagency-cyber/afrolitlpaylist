@@ -20,6 +20,11 @@ export const metadata: Metadata = {
     locale: "en_NG",
   },
   twitter: { card: "summary_large_image" },
+  // Search Console verification. Empty until the token from Search Console is set.
+  // Unlike GA, this is a meta tag, not a script, so it needs no consent banner.
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
   robots: {
     index: true,
     follow: true,

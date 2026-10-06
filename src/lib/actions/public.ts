@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { commentInput, subscribeInput } from "@/lib/validation";
 import { sendNewsletterConfirm } from "@/lib/services/email";
 import { rateLimit, LIMITS } from "@/lib/rate-limit";
+import { track } from "@/lib/analytics";
 import { runAction, type ActionState } from "./_result";
 
 const hash = (v: string) => crypto.createHash("sha256").update(v).digest("hex");
@@ -46,6 +47,7 @@ export async function submitComment(_prev: ActionState, formData: FormData): Pro
       },
     });
 
+    void track({ name: "comment_submit", entityId: post.id, path: `/blog` });
     return { ok: true, message: "Thanks — your comment is awaiting approval." };
   });
 }
@@ -79,6 +81,7 @@ export async function subscribe(_prev: ActionState, formData: FormData): Promise
     });
 
     await sendNewsletterConfirm(email, raw);
+    void track({ name: "newsletter_subscribe" });
     return { ok: true, message: "Almost there — check your inbox to confirm." };
   });
 }
@@ -104,6 +107,7 @@ export async function sendContactMessage(_prev: ActionState, formData: FormData)
       data: { name, email, subject: subject || null, body, kind: "general", status: "NEW" },
     });
     revalidatePath("/admin/inbox");
+    void track({ name: "contact_submit", path: "/contact" });
     return { ok: true, message: "Thanks — we'll be in touch." };
   });
 }

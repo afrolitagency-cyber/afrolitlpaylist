@@ -51,4 +51,6 @@ export const LIMITS = {
   subscribe: { max: 3, windowSec: 60 * 60 },
   contact: { max: 3, windowSec: 60 * 60 },
   register: { max: 5, windowSec: 60 * 60 },
+  views: { max: 60, windowSec: 60 },
+  events: { max: 30, windowSec: 60 },
 } as const;

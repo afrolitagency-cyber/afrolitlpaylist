@@ -536,5 +536,32 @@ model PageView {
   postId    String?
   createdAt DateTime @default(now())
 
+  sessionId   String?
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  country     String?
+  device      String?
+  isBot       Boolean  @default(false)
+
   @@index([path, createdAt])
+  @@index([isBot, createdAt])
+  @@index([sessionId])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  path      String?
+  entityId  String?
+  label     String?
+  meta      Json?
+  sessionId String?
+  isBot     Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([entityId])
+  @@index([label])
 }

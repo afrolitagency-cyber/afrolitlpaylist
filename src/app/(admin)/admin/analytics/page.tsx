@@ -9,18 +9,56 @@ export const dynamic = "force-dynamic";
 export default async function AnalyticsPage() {
   const user = await requireRole(...can.manageContent);
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const human = { isBot: false, createdAt: { gte: since } };
 
-  const [total, last30, topPosts, dailyRows, subscribers] = await Promise.all([
-    prisma.pageView.count(),
-    prisma.pageView.count({ where: { createdAt: { gte: since } } }),
+  const [total, last30, topPosts, dailyRows, subscribers, sessionRows, topReferrers, byCountry, byDevice, botShare, conversions, failedSearches] = await Promise.all([
+    prisma.pageView.count({ where: { isBot: false } }),
+    prisma.pageView.count({ where: human }),
     prisma.post.findMany({
       where: { status: "PUBLISHED" },
       orderBy: { viewCount: "desc" },
       take: 8,
       select: { slug: true, title: true, viewCount: true },
     }),
-    prisma.pageView.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
+    prisma.pageView.findMany({ where: human, select: { createdAt: true } }),
     prisma.newsletterSubscriber.count({ where: { status: "CONFIRMED" } }),
+    prisma.pageView.findMany({
+      where: { ...human, sessionId: { not: null } },
+      distinct: ["sessionId"],
+      select: { sessionId: true },
+    }),
+    prisma.pageView.groupBy({
+      by: ["referrer"],
+      where: { ...human, referrer: { not: null } },
+      _count: { _all: true },
+      orderBy: { _count: { referrer: "desc" } },
+      take: 8,
+    }),
+    prisma.pageView.groupBy({
+      by: ["country"],
+      where: human,
+      _count: { _all: true },
+      orderBy: { _count: { country: "desc" } },
+      take: 8,
+    }),
+    prisma.pageView.groupBy({
+      by: ["device"],
+      where: human,
+      _count: { _all: true },
+    }),
+    prisma.pageView.count({ where: { isBot: true, createdAt: { gte: since } } }),
+    prisma.analyticsEvent.groupBy({
+      by: ["name"],
+      where: { createdAt: { gte: since }, isBot: false },
+      _count: { _all: true },
+    }),
+    prisma.analyticsEvent.groupBy({
+      by: ["label"],
+      where: { name: "search_no_results", createdAt: { gte: since }, label: { not: null } },
+      _count: { _all: true },
+      orderBy: { _count: { label: "desc" } },
+      take: 15,
+    }),
   ]);
 
   // bucket by day in app code — avoids a raw SQL dependency for a small set
@@ -38,9 +76,11 @@ export default async function AnalyticsPage() {
 
   return (
     <AdminShell role={user.role} email={user.email} title="Analytics" subtitle="From your own page-view records">
-      <div className="mb-5 grid gap-4 sm:grid-cols-3">
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
           { label: "Views, last 30 days", value: last30 },
+          { label: "Sessions, last 30 days", value: sessionRows.length },
+          { label: "Bot views filtered", value: botShare },
           { label: "Views, all time", value: total },
           { label: "Confirmed subscribers", value: subscribers },
         ].map((s) => (
@@ -84,6 +124,33 @@ export default async function AnalyticsPage() {
           ))
         )}
       </div>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <Breakdown title="Where readers came from" rows={topReferrers.map((r) => ({ label: r.referrer ?? "Direct", count: r._count._all }))} empty="No referrers yet." />
+        <Breakdown title="Countries" rows={byCountry.map((r) => ({ label: r.country ?? "Unknown", count: r._count._all }))} empty="Country shows once the site is on Vercel." />
+        <Breakdown title="Devices" rows={byDevice.map((r) => ({ label: r.device ?? "Unknown", count: r._count._all }))} empty="No device data yet." />
+        <Breakdown title="Actions" rows={conversions.map((r) => ({ label: r.name.replaceAll("_", " "), count: r._count._all }))} empty="Signups, registrations and listens will show here." />
+        <Breakdown title="Searches with no results" rows={failedSearches.map((r) => ({ label: r.label ?? "", count: r._count._all }))} empty="No empty searches yet." />
+      </div>
     </AdminShell>
+  );
+}
+
+function Breakdown({ title, rows, empty }: { title: string; rows: { label: string; count: number }[]; empty: string }) {
+  const shown = rows.filter((r) => r.label);
+  return (
+    <div className="rounded-xl border border-(--border-strong) bg-(--card-bg)">
+      <div className="border-b border-(--border-strong) p-5"><h2 className="text-[15px] font-bold">{title}</h2></div>
+      {shown.length === 0 ? (
+        <p className="p-5 text-sm text-(--sub-text)">{empty}</p>
+      ) : (
+        shown.map((r) => (
+          <div key={r.label} className="flex items-center gap-4 border-b border-(--border-strong) px-5 py-3 last:border-0">
+            <span className="min-w-0 flex-1 truncate text-sm">{r.label}</span>
+            <span className="text-sm font-bold">{r.count.toLocaleString()}</span>
+          </div>
+        ))
+      )}
+    </div>
   );
 }

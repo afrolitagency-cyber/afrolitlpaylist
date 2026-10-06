@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { rateLimit, LIMITS } from "@/lib/rate-limit";
 import { sendEventRegistration } from "@/lib/services/email";
+import { track } from "@/lib/analytics";
 import { runAction, type ActionState } from "./_result";
 
 const schema = z.object({
@@ -76,6 +77,7 @@ export async function registerForEvent(_prev: ActionState, formData: FormData): 
 
     revalidatePath(`/events/${event.slug}`);
     revalidatePath("/admin/events");
+    void track({ name: "event_register", entityId: event.id, path: `/events/${event.slug}` });
     return { ok: true, message: "You're registered — check your email for the details." };
   });
 }

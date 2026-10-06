@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { searchAll, HREF, type SearchHit } from "@/lib/search";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { track } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Search", robots: { index: false } };
@@ -13,6 +14,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const { q } = await searchParams;
   const term = (q ?? "").trim();
   const hits = term ? await searchAll(term) : [];
+  if (term && hits.length === 0) {
+    void track({
+      name: "search_no_results",
+      path: "/search",
+      label: term.slice(0, 100),
+      meta: { term: term.slice(0, 100) },
+    });
+  }
 
   const groups = (["artist", "post", "episode", "event"] as const)
     .map((kind) => ({ kind, items: hits.filter((h) => h.kind === kind) }))

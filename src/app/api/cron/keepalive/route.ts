@@ -11,5 +11,13 @@ export async function GET(req: Request) {
   if (denied) return denied;
 
   await prisma.$queryRaw`SELECT 1`;
-  return NextResponse.json({ ok: true, at: new Date().toISOString() });
+
+  const yearAgo = new Date(Date.now() - 400 * 86_400_000);
+  const botCutoff = new Date(Date.now() - 30 * 86_400_000);
+  const [oldRows, botRows] = await Promise.all([
+    prisma.pageView.deleteMany({ where: { createdAt: { lt: yearAgo } } }),
+    prisma.pageView.deleteMany({ where: { isBot: true, createdAt: { lt: botCutoff } } }),
+  ]);
+
+  return NextResponse.json({ ok: true, at: new Date().toISOString(), pruned: { oldRows: oldRows.count, botRows: botRows.count } });
 }
