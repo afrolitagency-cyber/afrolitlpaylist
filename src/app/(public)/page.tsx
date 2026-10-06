@@ -5,6 +5,7 @@ import { loadTheme } from "@/components/themes/registry";
 import { WidgetSidebar } from "@/components/widgets/Sidebar";
 import { TrendingAlbums } from "@/components/widgets/TrendingAlbums";
 import { NewsletterSignup } from "@/components/public/NewsletterSignup";
+import { ArtistCoverflow, type CoverArtist } from "@/components/public/ArtistCoverflow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { WidgetSkeleton } from "@/components/ui/Skeleton";
 import type { Story } from "@/components/themes/types";
@@ -24,7 +25,7 @@ type PostRow = {
 };
 
 export default async function HomePage() {
-  const [themeKey, posts] = await Promise.all([
+  const [themeKey, posts, artistRows] = await Promise.all([
     getActiveTheme(),
     prisma.post.findMany({
       where: { status: "PUBLISHED" },
@@ -35,7 +36,20 @@ export default async function HomePage() {
         category: { select: { name: true } },
       },
     }),
+    prisma.artist.findMany({
+      where: { status: "LIVE" },
+      orderBy: { name: "asc" },
+      take: 8,
+      select: { slug: true, name: true, genre: true, avatarImage: true, coverImage: true },
+    }),
   ]);
+
+  const artists: CoverArtist[] = artistRows.map((a) => ({
+    slug: a.slug,
+    name: a.name,
+    genre: a.genre,
+    image: a.avatarImage || a.coverImage,
+  }));
 
   const { Hero, ArticleCard, SectionHead } = await loadTheme(themeKey);
 
@@ -71,6 +85,8 @@ export default async function HomePage() {
       {/* WebSite + Organization: enables the sitelinks search box in Google */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteLd) }} />
       {lead ? <Hero lead={lead} secondary={rest.slice(0, 3)} /> : null}
+
+      <ArtistCoverflow artists={artists} />
 
       <div className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main>
