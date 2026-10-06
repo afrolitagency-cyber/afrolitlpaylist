@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { uniqueSlug } from "@/lib/services/slug";
 
 /**
  * Invites: the raw token goes in the email, only its hash is stored. A database
@@ -57,6 +58,13 @@ export async function acceptInvite(rawToken: string, password: string, name?: st
 
     if (invite.artistId) {
       await tx.artist.update({ where: { id: invite.artistId }, data: { userId: user.id } });
+    } else if (invite.role === "ARTIST") {
+      const existing = await tx.artist.findUnique({ where: { userId: user.id }, select: { id: true } });
+      if (!existing) {
+        const displayName = (user.name?.trim() || invite.email.split("@")[0] || "Artist").slice(0, 120);
+        const slug = await uniqueSlug("artist", displayName);
+        await tx.artist.create({ data: { name: displayName, slug, userId: user.id, status: "DRAFT" } });
+      }
     }
 
     await tx.invite.update({ where: { id: invite.id }, data: { acceptedAt: new Date() } });
