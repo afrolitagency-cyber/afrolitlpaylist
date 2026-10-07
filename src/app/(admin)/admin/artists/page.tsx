@@ -34,7 +34,8 @@ export default async function AdminArtists({ searchParams }: { searchParams: Pro
       : (counts.find((c: { status: string }) => c.status === s)?._count ?? 0);
 
   return (
-    <AdminShell role={user.role} email={user.email} title="Artists" subtitle="Profiles, submissions and invites">
+    <AdminShell role={user.role} email={user.email} title="Artists" subtitle="Profiles, submissions and invites"
+      actions={<Link href="/admin/artists/new" className="rounded bg-(--primary) px-4 py-2 text-sm font-semibold text-white">+ New artist</Link>}>
       <div className="mb-4 flex flex-wrap gap-2">
         {TABS.map((t) => (
           <Link key={t} href={t === "ALL" ? "/admin/artists" : `/admin/artists?status=${t}`}
@@ -48,8 +49,8 @@ export default async function AdminArtists({ searchParams }: { searchParams: Pro
 
       {artists.length === 0 ? (
         <EmptyState title="No artists here"
-          body={active === "ALL" ? "Invite an artist from the Users page to get started." : "Nothing with this status right now."}
-          action={active === "ALL" ? { href: "/admin/users", label: "Invite an artist" } : undefined} />
+          body={active === "ALL" ? "Create a profile here, or invite someone from Users and let them fill it in." : "Nothing with this status right now."}
+          action={active === "ALL" ? { href: "/admin/artists/new", label: "New artist" } : undefined} />
       ) : (
         <div className="overflow-hidden rounded-xl border border-(--border-strong) bg-(--card-bg)">
           {artists.map((a: {
@@ -67,6 +68,8 @@ export default async function AdminArtists({ searchParams }: { searchParams: Pro
                 {a.submittedAt ? a.submittedAt.toLocaleDateString("en-GB") : "—"}
               </span>
               <StatusPill status={a.status} />
+              <Link href={`/admin/artists/${a.id}`}
+                className="rounded border border-(--border-strong) px-3.5 py-1.5 text-xs font-bold">Edit</Link>
               <Link href={`/admin/artists/${a.id}/media`}
                 className="rounded border border-(--border-strong) px-3.5 py-1.5 text-xs font-bold">Moments</Link>
               {["PENDING", "CHANGES_REQUESTED"].includes(a.status) ? (

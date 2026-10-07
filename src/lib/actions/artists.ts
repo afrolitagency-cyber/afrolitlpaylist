@@ -1,12 +1,15 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireRoleFresh, requireOwnArtist, can } from "@/lib/rbac";
+import { requireRole, requireRoleFresh, requireOwnArtist, can } from "@/lib/rbac";
 import { artistProfileInput, reviewDecisionInput } from "@/lib/validation";
 import { joinGenres } from "@/lib/genres";
+import { uniqueSlug } from "@/lib/services/slug";
+import { createInvite } from "@/lib/services/invite";
 import { approve, reject, requestChanges, submitForReview } from "@/lib/services/review";
-import { sendChangesRequested, sendProfileApproved } from "@/lib/services/email";
+import { sendArtistInvite, sendChangesRequested, sendProfileApproved } from "@/lib/services/email";
 import { track } from "@/lib/analytics";
 import { runAction, type ActionState } from "./_result";
 
@@ -78,6 +81,77 @@ export async function decideReview(_prev: ActionState, formData: FormData): Prom
           : input.decision === "REJECTED"
             ? "Submission rejected."
             : "Changes requested — the artist has been notified.",
+    };
+  });
+}
+
+/** Admin or editor writes the profile directly. A draft stays off the public site. */
+export async function saveArtist(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const id = String(formData.get("id") ?? "");
+    const status = formData.get("status") === "LIVE" ? ("LIVE" as const) : ("DRAFT" as const);
+    const actor = status === "LIVE"
+      ? await requireRoleFresh(...can.manageContent)
+      : await requireRole(...can.manageContent);
+
+    const data = artistProfileInput.parse({
+      name: formData.get("name"),
+      genre: joinGenres(formData.getAll("genre").map(String)),
+      location: formData.get("location") || null,
+      bio: formData.get("bio") || null,
+      coverImage: formData.get("coverImage") || null,
+      avatarImage: formData.get("avatarImage") || null,
+      streamEmbedUrl: formData.get("streamEmbedUrl") || null,
+    });
+
+    const claimEmail = String(formData.get("claimEmail") ?? "").trim().toLowerCase();
+    if (claimEmail && !claimEmail.includes("@")) return { ok: false, error: "That email doesn't look right." };
+    if (claimEmail && actor.role !== "ADMIN") {
+      return { ok: false, error: "Only an admin can email an artist to claim a profile." };
+    }
+
+    const fields = {
+      name: data.name,
+      genre: data.genre,
+      location: data.location,
+      bio: data.bio,
+      coverImage: data.coverImage,
+      avatarImage: data.avatarImage,
+      streamEmbedUrl: data.streamEmbedUrl,
+      status,
+      pendingProfile: Prisma.DbNull,
+      reviewNote: null,
+    };
+
+    const artist = id
+      ? await prisma.artist.update({ where: { id }, data: fields })
+      : await prisma.artist.create({
+          data: { ...fields, slug: await uniqueSlug("artist", data.name) },
+        });
+
+    let inviteNote = "";
+    if (claimEmail) {
+      if (artist.userId) {
+        inviteNote = " This profile is already claimed, so no invite was sent.";
+      } else {
+        const token = await createInvite(claimEmail, artist.id, actor.id);
+        const sent = await sendArtistInvite(claimEmail, token, artist.name);
+        inviteNote = sent
+          ? ` Invite sent to ${claimEmail}.`
+          : " The profile was saved, but the claim email did not send.";
+      }
+    }
+
+    revalidateTag("artists");
+    revalidatePath("/admin/artists");
+    revalidatePath("/artists");
+    revalidatePath("/");
+    revalidatePath(`/artists/${artist.slug}`);
+    revalidatePath(`/admin/artists/${artist.id}`);
+
+    return {
+      ok: true,
+      message: (status === "LIVE" ? "Artist published." : "Artist saved as a draft.") + inviteNote,
     };
   });
 }
