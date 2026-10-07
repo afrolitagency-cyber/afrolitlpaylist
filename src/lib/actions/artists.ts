@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireRoleFresh, requireOwnArtist, can } from "@/lib/rbac";
 import { artistProfileInput, reviewDecisionInput } from "@/lib/validation";
+import { joinGenres } from "@/lib/genres";
 import { approve, reject, requestChanges, submitForReview } from "@/lib/services/review";
 import { sendChangesRequested, sendProfileApproved } from "@/lib/services/email";
 import { track } from "@/lib/analytics";
@@ -17,7 +18,7 @@ export async function submitProfile(_prev: ActionState, formData: FormData): Pro
 
     const data = artistProfileInput.parse({
       name: formData.get("name"),
-      genre: formData.get("genre") || null,
+      genre: joinGenres(formData.getAll("genre").map(String)),
       location: formData.get("location") || null,
       bio: formData.get("bio") || null,
       coverImage: formData.get("coverImage") || null,

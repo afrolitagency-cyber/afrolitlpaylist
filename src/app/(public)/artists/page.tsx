@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { Pagination } from "@/components/ui/Pagination";
+import { GENRES, canonicalGenre, parseGenres } from "@/lib/genres";
 
 export const revalidate = 600;
 export const metadata = { title: "Artists" };
@@ -12,7 +13,20 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Prom
   const { genre, page } = await searchParams;
   const current = Math.max(1, Number(page ?? 1) || 1);
 
-  const where = { status: "LIVE" as const, ...(genre ? { genre: { equals: genre, mode: "insensitive" as const } } : {}) };
+  const selected = genre ? canonicalGenre(genre) : null;
+  const where = {
+    status: "LIVE" as const,
+    ...(selected
+      ? {
+          OR: [
+            { genre: { equals: selected, mode: "insensitive" as const } },
+            { genre: { startsWith: `${selected} ·`, mode: "insensitive" as const } },
+            { genre: { endsWith: ` · ${selected}`, mode: "insensitive" as const } },
+            { genre: { contains: ` · ${selected} ·`, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
 
   const [artists, total, allGenres] = await Promise.all([
     prisma.artist.findMany({
@@ -27,7 +41,8 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Prom
   ]);
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
 
-  const genres = allGenres.map((a: { genre: string | null }) => a.genre).filter(Boolean) as string[];
+  const present = new Set(allGenres.flatMap((a: { genre: string | null }) => parseGenres(a.genre)));
+  const genres = GENRES.filter((item) => present.has(item));
 
   return (
     <div className="wrap py-8">
@@ -36,10 +51,10 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Prom
 
       {genres.length ? (
         <div className="mb-7 flex flex-wrap gap-2">
-          <Link href="/artists" className={`rounded-full border px-4 py-2 text-[13px] font-semibold ${!genre ? "border-(--primary) bg-(--primary) text-white" : "border-(--border-strong) text-(--sub-text)"}`}>All</Link>
+          <Link href="/artists" className={`rounded-full border px-4 py-2 text-[13px] font-semibold ${!selected ? "border-(--primary) bg-(--primary) text-white" : "border-(--border-strong) text-(--sub-text)"}`}>All</Link>
           {genres.map((g) => (
             <Link key={g} href={`/artists?genre=${encodeURIComponent(g)}`}
-              className={`rounded-full border px-4 py-2 text-[13px] font-semibold ${genre === g ? "border-(--primary) bg-(--primary) text-white" : "border-(--border-strong) text-(--sub-text) hover:text-(--body-text)"}`}>
+              className={`rounded-full border px-4 py-2 text-[13px] font-semibold ${selected === g ? "border-(--primary) bg-(--primary) text-white" : "border-(--border-strong) text-(--sub-text) hover:text-(--body-text)"}`}>
               {g}
             </Link>
           ))}

@@ -63,11 +63,11 @@ const rememberedSchema = z.object({
   height: z.number().int().positive().optional().nullable(),
 });
 
-/** Images the post editor can reuse. Editors only — the library is not public. */
+/** Images already uploaded. Editors see the shared library; artists see only their own. */
 export async function listImageAssets(): Promise<{ id: string; url: string }[]> {
-  await requireRole(...can.manageContent);
+  const user = await requireRole(...can.manageContent, "ARTIST");
   return prisma.mediaAsset.findMany({
-    where: { kind: "image" },
+    where: { kind: "image", ...(user.role === "ARTIST" ? { uploadedById: user.id } : {}) },
     orderBy: { createdAt: "desc" },
     take: 80,
     select: { id: true, url: true },
@@ -77,7 +77,7 @@ export async function listImageAssets(): Promise<{ id: string; url: string }[]> 
 /** Keeps a Cloudinary upload in the library after the editor inserts it. */
 export async function rememberUpload(input: z.input<typeof rememberedSchema>): Promise<ActionState> {
   return runAction(async () => {
-    const user = await requireRole(...can.manageContent);
+    const user = await requireRole(...can.manageContent, "ARTIST");
     const data = rememberedSchema.parse(input);
     await prisma.mediaAsset.create({
       data: {

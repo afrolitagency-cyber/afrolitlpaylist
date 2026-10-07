@@ -23,7 +23,7 @@ export const postInput = z.object({
 
 export const artistProfileInput = z.object({
   name: z.string().min(1).max(120),
-  genre: z.string().max(80).optional().nullable(),
+  genre: z.string().max(400).optional().nullable(),
   location: z.string().max(120).optional().nullable(),
   bio: z.string().max(5000).optional().nullable(),
   coverImage: z.string().url().optional().nullable(),
