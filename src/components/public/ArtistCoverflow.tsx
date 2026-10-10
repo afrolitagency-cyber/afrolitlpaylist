@@ -142,7 +142,7 @@ export function ArtistCoverflow({ artists }: { artists: CoverArtist[] }) {
                 }}
               >
                 <span
-                  className={`pointer-events-none absolute -inset-2 rounded-full border-2 border-(--primary) ${spot.active ? "opacity-100" : "opacity-0"}`}
+                  className={`pointer-events-none absolute inset-0 z-10 rounded-full border-[3px] border-(--primary) ${spot.active ? "opacity-100" : "opacity-0"}`}
                   style={spot.active ? { animation: "coverflow-pulse 2.2s ease-out infinite" } : undefined}
                 />
                 <span className="relative block h-full w-full overflow-hidden rounded-full bg-black">
