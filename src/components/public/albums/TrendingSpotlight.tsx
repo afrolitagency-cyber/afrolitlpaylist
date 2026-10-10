@@ -8,7 +8,7 @@ import { ListenPicker } from "./ListenPicker";
 
 const SLIDE_MS = 7000;
 
-/** Homepage "Now Spinning": one album on stage, the chart beside it, auto-advancing. */
+/** Homepage Trending Albums: one album on stage, the chart beside it, auto-advancing. */
 export function TrendingSpotlight({ albums }: { albums: ChartAlbum[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -23,10 +23,7 @@ export function TrendingSpotlight({ albums }: { albums: ChartAlbum[] }) {
   return (
     <section className="py-10" aria-labelledby="trending-albums-title">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-3.5">
-        <div>
-          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-(--primary)">Now Spinning</p>
-          <h2 id="trending-albums-title" className="text-[clamp(1.8rem,4vw,2.8rem)] font-bold tracking-tight">Trending Albums</h2>
-        </div>
+        <h2 id="trending-albums-title" className="text-[clamp(1.8rem,4vw,2.8rem)] font-bold tracking-tight">Trending Albums</h2>
         <Link href="/albums" className="rounded-full border border-(--border-strong) px-4.5 py-2.5 text-[12.5px] hover:border-(--primary) hover:text-(--primary)">
           View full chart →
         </Link>
