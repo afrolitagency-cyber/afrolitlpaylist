@@ -13,7 +13,6 @@ import { prisma } from "@/lib/prisma";
 export type TrendingItem = { rank: number; title: string; sub: string; href: string; image: string | null };
 export type EventItem = { slug: string; title: string; date: string; venue: string; image: string | null };
 export type NowPlaying = { title: string; artist: string; artistSlug: string | null; audioUrl: string | null; image: string | null } | null;
-export type AlbumItem = { title: string; artist: string; artistSlug: string; year: string; cover: string | null; href: string };
 export type ListenLink = { service: "spotify" | "youtube"; label: string; sub: string; href: string };
 
 /** Trending = most-viewed published posts this week, falling back to all-time
@@ -90,25 +89,6 @@ export const getNowPlaying = cache(async (): Promise<NowPlaying> => {
     audioUrl: release.streamUrl,
     image: release.coverArt,
   };
-});
-
-/** Trending albums strip (Street template). */
-export const getTrendingAlbums = cache(async (take = 5): Promise<AlbumItem[]> => {
-  const rows = await prisma.discography.findMany({
-    where: { published: true, artist: { status: "LIVE" } },
-    orderBy: { releaseDate: "desc" },
-    take,
-    select: { title: true, coverArt: true, releaseDate: true, artist: { select: { name: true, slug: true } } },
-  });
-
-  return rows.map((d: { title: string; coverArt: string | null; releaseDate: Date | null; artist: { name: string; slug: string } }) => ({
-    title: d.title,
-    artist: d.artist.name,
-    artistSlug: d.artist.slug,
-    year: d.releaseDate ? String(d.releaseDate.getFullYear()) : "",
-    cover: d.coverArt,
-    href: `/artists/${d.artist.slug}`,
-  }));
 });
 
 /** "Listen on" comes from site settings, so it is editable without a deploy. */

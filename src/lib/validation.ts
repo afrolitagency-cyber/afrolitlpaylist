@@ -63,6 +63,24 @@ export const eventInput = z.object({
   coverImage: z.string().url().optional().nullable(),
 });
 
+const httpsUrl = z.string().url().max(2000).refine((u) => u.startsWith("https://"), "Use an https:// link");
+
+export const albumInput = z.object({
+  title: z.string().min(1).max(200),
+  artistName: z.string().min(1).max(160),
+  artistId: z.string().cuid().optional().nullable(),
+  releaseYear: z.number().int().min(1900).max(2100).optional().nullable(),
+  genre: z.string().max(80).optional().nullable(),
+  summary: z.string().max(240).optional().nullable(),
+  about: z.string().max(8000).optional().nullable(),
+  tracks: z.array(z.string().min(1).max(200)).max(60).default([]),
+  coverImage: z.string().url().optional().nullable(),
+  links: z.record(z.string(), httpsUrl).default({}),
+  rank: z.number().int().min(1).max(999),
+  movement: z.number().int().min(-99).max(99).default(0),
+  published: z.boolean().default(false),
+});
+
 export const commentInput = z.object({
   postId: z.string().cuid(),
   name: z.string().min(1).max(80),

@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { getActiveTheme } from "@/lib/settings";
+import { getActiveTheme, getAlbumStyles } from "@/lib/settings";
 import { loadTheme } from "@/components/themes/registry";
 import { WidgetSidebar } from "@/components/widgets/Sidebar";
-import { TrendingAlbums } from "@/components/widgets/TrendingAlbums";
+import { TrendingSpotlight } from "@/components/public/albums/TrendingSpotlight";
+import { AlbumStrip } from "@/components/public/albums/AlbumStrip";
+import { getChart } from "@/lib/albums";
 import { NewsletterSignup } from "@/components/public/NewsletterSignup";
 import { ArtistCoverflow, type CoverArtist } from "@/components/public/ArtistCoverflow";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -25,7 +27,7 @@ type PostRow = {
 };
 
 export default async function HomePage() {
-  const [themeKey, posts, artistRows] = await Promise.all([
+  const [themeKey, posts, artistRows, chart, albumStyles] = await Promise.all([
     getActiveTheme(),
     prisma.post.findMany({
       where: { status: "PUBLISHED" },
@@ -42,6 +44,8 @@ export default async function HomePage() {
       take: 8,
       select: { slug: true, name: true, genre: true, avatarImage: true, coverImage: true },
     }),
+    getChart(6),
+    getAlbumStyles(),
   ]);
 
   const artists: CoverArtist[] = artistRows.map((a) => ({
@@ -88,6 +92,8 @@ export default async function HomePage() {
 
       <ArtistCoverflow artists={artists} />
 
+      {albumStyles[themeKey] === "strip" ? <AlbumStrip albums={chart} /> : <TrendingSpotlight albums={chart} />}
+
       <div className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main>
           <SectionHead title="Latest stories" href="/blog" />
@@ -102,10 +108,6 @@ export default async function HomePage() {
               {rest.slice(3).map((s: Story) => <ArticleCard key={s.slug} story={s} />)}
             </div>
           )}
-
-          <Suspense fallback={null}>
-            <div className="mt-10"><TrendingAlbums /></div>
-          </Suspense>
 
           <section className="mt-10 rounded-xl bg-(--surface-alt) p-10 text-center">
             <h2 className="mb-2 text-[clamp(26px,3vw,32px)] font-black">Never miss a drop</h2>

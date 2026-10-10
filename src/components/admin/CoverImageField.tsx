@@ -18,7 +18,7 @@ export function CoverImageField({
   defaultValue?: string;
   hint?: string;
   required?: boolean;
-  shape?: "wide" | "square";
+  shape?: "wide" | "square" | "tile";
 }) {
   const [url, setUrl] = useState(defaultValue);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -52,7 +52,13 @@ export function CoverImageField({
           <img
             src={url}
             alt=""
-            className={shape === "square" ? "mx-auto block size-28 rounded-full object-cover" : "aspect-video w-full object-cover"}
+            className={
+              shape === "square"
+                ? "mx-auto block size-28 rounded-full object-cover"
+                : shape === "tile"
+                  ? "aspect-square w-full object-cover"
+                  : "aspect-video w-full object-cover"
+            }
           />
           <button type="button" onClick={() => setUrl("")} className="w-full px-3 py-2 text-left text-xs font-bold text-(--primary)">
             Remove

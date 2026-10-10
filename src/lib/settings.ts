@@ -15,7 +15,32 @@ export const SETTING_KEYS = {
   identity: "site.identity",
   behaviour: "site.behaviour",
   embed: "site.embed",
+  albumStyle: "site.albumStyle",
 } as const;
+
+export const ALBUM_STYLES = ["spotlight", "strip"] as const;
+export type AlbumStyle = (typeof ALBUM_STYLES)[number];
+export type AlbumStyles = Record<ThemeKey, AlbumStyle>;
+
+const DEFAULT_ALBUM_STYLES: AlbumStyles = {
+  editorial: "spotlight",
+  centred: "spotlight",
+  musicblog: "spotlight",
+  darkroom: "spotlight",
+  street: "strip",
+};
+
+/** Which Trending Albums layout each homepage template uses. */
+export const getAlbumStyles = cache(async (): Promise<AlbumStyles> => {
+  const row = await prisma.siteSetting.findUnique({ where: { key: SETTING_KEYS.albumStyle } });
+  const saved = (row?.value ?? {}) as Record<string, unknown>;
+  const out = { ...DEFAULT_ALBUM_STYLES };
+  for (const key of THEME_KEYS) {
+    const value = saved[key];
+    if (ALBUM_STYLES.includes(value as AlbumStyle)) out[key] = value as AlbumStyle;
+  }
+  return out;
+});
 
 const FALLBACK_IDENTITY: SiteIdentity = {
   name: "AfroLit Playlist",

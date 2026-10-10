@@ -11,7 +11,7 @@ export function slugify(input: string): string {
     .slice(0, 140);
 }
 
-type SlugModel = "post" | "event" | "episode" | "artist" | "eventSeries";
+type SlugModel = "post" | "event" | "episode" | "artist" | "eventSeries" | "album";
 
 /** Appends -2, -3 … until free. `ignoreId` lets a row keep its own slug on edit. */
 export async function uniqueSlug(model: SlugModel, desired: string, ignoreId?: string) {

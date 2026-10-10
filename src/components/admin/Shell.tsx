@@ -10,6 +10,7 @@ type IconName =
   | "comments"
   | "posts"
   | "artists"
+  | "albums"
   | "events"
   | "episodes"
   | "gallery"
@@ -30,6 +31,7 @@ const NAV: Item[] = [
   { label: "Comments", href: "/admin/comments", icon: "comments" },
   { label: "Posts", href: "/admin/posts", icon: "posts" },
   { label: "Artists", href: "/admin/artists", icon: "artists" },
+  { label: "Albums", href: "/admin/albums", icon: "albums" },
   { label: "Events", href: "/admin/events", icon: "events" },
   { label: "Episodes", href: "/admin/episodes", icon: "episodes" },
   { label: "Gallery", href: "/admin/gallery", icon: "gallery" },
@@ -92,6 +94,14 @@ function NavIcon({ name }: { name: IconName }) {
         <svg {...props}>
           <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" />
           <path d="M19 11a7 7 0 0 1-14 0M12 18v3" />
+        </svg>
+      );
+    case "albums":
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3a9 9 0 0 1 9 9" />
         </svg>
       );
     case "events":

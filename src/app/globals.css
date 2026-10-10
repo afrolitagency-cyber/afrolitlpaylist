@@ -61,6 +61,17 @@ main, aside, .grid > * { min-width: 0; }
   100% { box-shadow: 0 0 0 18px rgba(229, 9, 20, 0); }
 }
 
+@keyframes vinyl-spin { to { transform: rotate(360deg); } }
+@keyframes chart-fill { to { width: 100%; } }
+@keyframes chart-in { from { opacity: 0; transform: translateY(12px); } }
+
+.vinyl {
+  background:
+    radial-gradient(circle, #0a0a0c 0 3%, var(--primary) 4% 15%, #111 16% 17%, transparent 18%),
+    repeating-radial-gradient(circle, #101012 0 2px, #1c1c20 2px 4px);
+  animation: vinyl-spin 7s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

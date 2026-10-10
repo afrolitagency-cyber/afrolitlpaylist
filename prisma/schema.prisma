@@ -99,6 +99,7 @@ model Artist {
   submittedAt    DateTime?
 
   discography  Discography[]
+  albums       Album[]
   moments      Moment[]
   stories      ArtistStory[]
   posts        Post[]
@@ -200,6 +201,32 @@ model ArtistStory {
   createdAt   DateTime  @default(now())
 
   @@index([artistId, publishedAt])
+}
+
+/// Editor-ranked trending chart. Separate from Discography so any album can
+/// chart, whether or not the artist has a profile here.
+model Album {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  artistName  String
+  artistId    String?
+  artist      Artist?  @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  releaseYear Int?
+  genre       String?
+  summary     String?
+  about       String?  @db.Text
+  tracks      String[]
+  coverImage  String?
+  links       Json? // { spotify, apple, audiomack, boomplay, youtube }
+  rank        Int      @default(99)
+  movement    Int      @default(0)
+  published   Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, rank])
 }
 
 // ─────────────────────────────────────────────── editorial

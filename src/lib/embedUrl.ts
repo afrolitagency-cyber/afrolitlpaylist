@@ -18,6 +18,7 @@ export function normalizeEmbedUrl(raw: string): string | null {
 
   if (url.hostname === "open.spotify.com") {
     const parts = url.pathname.split("/").filter(Boolean);
+    if (parts[0]?.startsWith("intl-")) parts.shift();
     const embedded = parts[0] === "embed";
     const kind = embedded ? parts[1] : parts[0];
     const id = embedded ? parts[2] : parts[1];

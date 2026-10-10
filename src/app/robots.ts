@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         // /search is excluded: query strings generate unbounded near-duplicate URLs
-        disallow: ["/admin", "/portal", "/api", "/search", "/newsletter/"],
+        disallow: ["/admin", "/portal", "/api", "/search", "/newsletter/", "/go/"],
       },
     ],
     sitemap: `${base}/sitemap.xml`,

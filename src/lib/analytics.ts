@@ -12,6 +12,7 @@ export const EVENT_NAMES = [
   "search_no_results",
   "listen_click",
   "share_click",
+  "album_listen_click",
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];
