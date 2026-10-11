@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import Image from "next/image";
 import { saveMoment, deleteMoment, saveStory, deleteStory } from "@/lib/actions/artistMedia";
 import type { ActionState } from "@/lib/actions/_result";
-import { UploadField } from "@/components/ui/UploadField";
+import { CoverImageField } from "@/components/admin/CoverImageField";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -69,7 +69,7 @@ export function ArtistMediaEditor({
           <form action={saveM} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
             <input type="hidden" name="artistId" value={artistId} />
             <h3 className="mb-4 text-[15px] font-bold">Add a moment</h3>
-            <UploadField name="mediaUrl" label="Image" />
+            <CoverImageField key={moments.length} name="mediaUrl" label="Image" shape="tile" />
             <div className="mt-4">
               <label className={label} htmlFor="caption">Caption</label>
               <input id="caption" name="caption" className={field} />
@@ -124,7 +124,7 @@ export function ArtistMediaEditor({
               <label className={label} htmlFor="title">Title</label>
               <input id="title" name="title" required defaultValue={editingStory?.title ?? ""} className={field} />
             </div>
-            <UploadField name="coverImage" label="Cover image" defaultValue={editingStory?.coverImage ?? ""} />
+            <CoverImageField key={editingStory?.id ?? "new"} name="coverImage" label="Cover image" defaultValue={editingStory?.coverImage ?? ""} />
             <div className="mt-4">
               <label className={label} htmlFor="bodyText">Body</label>
               <textarea id="bodyText" name="bodyText" rows={8} defaultValue={editingStory?.bodyText ?? ""} className={field}

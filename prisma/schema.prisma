@@ -370,6 +370,11 @@ model Event {
   venue       String?
   address     String?
   country     String?
+  city        String?
+  eventType   String?
+  ageLimit    String?
+  /// [{ time: "19:00", title: "Doors open", note?: "…" }]
+  schedule    Json?
   status      ContentStatus @default(DRAFT)
 
   seriesId String?
@@ -378,6 +383,9 @@ model Event {
 
   registrationOpen Boolean @default(false)
   registrationUrl  String?
+  ticketed         Boolean @default(false)
+  /// Lowest ticket price in naira; shown as "From ₦…".
+  priceFrom        Int?
   capacity         Int?
   soldOut          Boolean @default(false)
   calendarExport   Boolean @default(true)
@@ -398,6 +406,9 @@ model EventRegistration {
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   name      String
   email     String
+  optIn     Boolean  @default(false)
+  /// Signed up after the event sold out; does not hold a place.
+  waitlist  Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@unique([eventId, email])

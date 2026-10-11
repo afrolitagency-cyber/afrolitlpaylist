@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import Image from "next/image";
 import { saveGalleryImage, deleteGalleryImage } from "@/lib/actions/media";
 import type { ActionState } from "@/lib/actions/_result";
-import { UploadField } from "@/components/ui/UploadField";
+import { CoverImageField } from "@/components/admin/CoverImageField";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -71,7 +71,8 @@ export function GalleryManager({
         <h3 className="mb-4 text-[15px] font-bold">{selected ? "Edit image" : "Add an image"}</h3>
         {selected ? <input type="hidden" name="id" value={selected.id} /> : null}
 
-        <UploadField name="url" label="Image" defaultValue={selected?.url ?? ""} hint="Published images appear in the public grid." />
+        <CoverImageField key={selected?.id ?? "new"} name="url" label="Image" defaultValue={selected?.url ?? ""} required
+          hint="Published images appear in the public grid." />
 
         <div className="mt-4">
           <label className={label} htmlFor="caption">Caption</label>

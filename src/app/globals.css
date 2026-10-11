@@ -64,6 +64,19 @@ main, aside, .grid > * { min-width: 0; }
 @keyframes vinyl-spin { to { transform: rotate(360deg); } }
 @keyframes chart-fill { to { width: 100%; } }
 @keyframes chart-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes event-reveal { from { clip-path: inset(0 0 0 100%); } }
+@keyframes event-zoom {
+  from { transform: scale(1.14); }
+  to { transform: scale(1); }
+}
+@keyframes event-up { from { opacity: 0; transform: translateY(20px); } }
+@keyframes event-draw { to { stroke-dashoffset: 0; } }
+@keyframes event-word-up { to { transform: none; } }
+
+.event-slide-on { animation: event-reveal 1.1s cubic-bezier(.16, 1, .3, 1); }
+.event-ken { animation: event-zoom 12s ease-in-out infinite alternate; }
+.event-up { animation: event-up .8s cubic-bezier(.16, 1, .3, 1) both; animation-delay: var(--d, 0s); }
+.event-word { animation: event-word-up 1s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i) * .08s + .3s); }
 
 .vinyl {
   background:

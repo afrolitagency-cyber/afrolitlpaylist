@@ -15,6 +15,15 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
     if (publishing) await requireRoleFresh(...can.manageContent);
     else await requireRole(...can.manageContent);
 
+    const scheduleLines = String(formData.get("schedule") ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [time, title, note] = line.split("|").map((p) => p.trim());
+        return { time: time || "", title: title || time || "", ...(note ? { note } : {}) };
+      });
+
     const data = eventInput.parse({
       title: formData.get("title"),
       slug: formData.get("slug") || undefined,
@@ -25,10 +34,16 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
       venue: formData.get("venue") || null,
       address: formData.get("address") || null,
       country: formData.get("country") || null,
+      city: formData.get("city") || null,
+      eventType: formData.get("eventType") || null,
+      ageLimit: formData.get("ageLimit") || null,
+      schedule: scheduleLines,
       seriesId: formData.get("seriesId") || null,
       lineupArtistIds: formData.getAll("lineupArtistIds").map(String).filter(Boolean),
       registrationOpen: formData.get("registrationOpen") === "on",
       registrationUrl: formData.get("registrationUrl") || null,
+      ticketed: formData.get("ticketed") === "on",
+      priceFrom: formData.get("priceFrom") ? Number(formData.get("priceFrom")) : null,
       capacity: formData.get("capacity") ? Number(formData.get("capacity")) : null,
       soldOut: formData.get("soldOut") === "on",
       status: formData.get("status"),

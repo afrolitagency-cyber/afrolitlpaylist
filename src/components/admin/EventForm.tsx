@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { saveEvent } from "@/lib/actions/events";
 import type { ActionState } from "@/lib/actions/_result";
-import { UploadField } from "@/components/ui/UploadField";
+import { CoverImageField } from "@/components/admin/CoverImageField";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -11,9 +11,11 @@ const label = "mb-1.5 block text-xs font-bold";
 export type EventValues = {
   id?: string;
   title: string; slug: string; description: string; startsAt: string; doorsAt: string;
-  timezone: string; venue: string; address: string; country: string; seriesId: string;
+  timezone: string; venue: string; address: string; country: string; city: string;
+  eventType: string; ageLimit: string; schedule: string; seriesId: string;
   lineupArtistIds: string[]; registrationOpen: boolean; registrationUrl: string;
-  capacity: string; soldOut: boolean; status: string; coverImage: string;
+  ticketed: boolean; priceFrom: string; capacity: string; soldOut: boolean;
+  status: string; coverImage: string;
 };
 
 export function EventForm({
@@ -25,6 +27,7 @@ export function EventForm({
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveEvent, null);
   const [status, setStatus] = useState(values.status);
+  const [ticketed, setTicketed] = useState(values.ticketed);
 
   return (
     <form action={action} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
@@ -56,6 +59,20 @@ export function EventForm({
                 {series.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
               <p className="mt-1.5 text-xs text-(--sub-text)">Series events appear in the site nav dropdown.</p>
+            </div>
+          </div>
+          <div className="mb-4 grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className={label} htmlFor="eventType">Type</label>
+              <input id="eventType" name="eventType" defaultValue={values.eventType} placeholder="Concert, Festival…" className={field} />
+            </div>
+            <div>
+              <label className={label} htmlFor="city">City</label>
+              <input id="city" name="city" defaultValue={values.city} className={field} />
+            </div>
+            <div>
+              <label className={label} htmlFor="ageLimit">Age limit</label>
+              <input id="ageLimit" name="ageLimit" defaultValue={values.ageLimit} placeholder="18+, All ages…" className={field} />
             </div>
           </div>
           <div className="mb-4 grid gap-4 sm:grid-cols-3">
@@ -93,8 +110,15 @@ export function EventForm({
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
-          <label className={label} htmlFor="description">Description</label>
+          <label className={label} htmlFor="description">About this event</label>
           <textarea id="description" name="description" rows={6} defaultValue={values.description} className={field} />
+        </div>
+
+        <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
+          <label className={label} htmlFor="schedule">Schedule</label>
+          <textarea id="schedule" name="schedule" rows={5} defaultValue={values.schedule} className={field}
+            placeholder={"19:00 | Doors open | Arrive early\n20:00 | Opening set\n21:30 | Headline performance"} />
+          <p className="mt-1.5 text-xs text-(--sub-text)">One row per beat: time | title | optional note</p>
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
@@ -123,7 +147,17 @@ export function EventForm({
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
-          <h3 className="mb-4 text-[15px] font-bold">Registration</h3>
+          <h3 className="mb-4 text-[15px] font-bold">Attendance</h3>
+          <label className="flex items-center justify-between py-2.5 text-sm">
+            <span>Ticketed (external link)</span>
+            <input
+              type="checkbox"
+              name="ticketed"
+              checked={ticketed}
+              onChange={(e) => setTicketed(e.target.checked)}
+              className="size-4 accent-(--primary)"
+            />
+          </label>
           <label className="flex items-center justify-between py-2.5 text-sm">
             <span>Registration open</span>
             <input type="checkbox" name="registrationOpen" defaultChecked={values.registrationOpen} className="size-4 accent-(--primary)" />
@@ -136,14 +170,32 @@ export function EventForm({
             <label className={label} htmlFor="capacity">Capacity</label>
             <input id="capacity" name="capacity" type="number" min={1} defaultValue={values.capacity} className={field} />
           </div>
-          <div>
-            <label className={label} htmlFor="registrationUrl">Ticket URL</label>
-            <input id="registrationUrl" name="registrationUrl" defaultValue={values.registrationUrl} placeholder="https://" className={field} />
-          </div>
+          {ticketed ? (
+            <>
+              <div className="mb-4">
+                <label className={label} htmlFor="priceFrom">From price (₦)</label>
+                <input id="priceFrom" name="priceFrom" type="number" min={0} defaultValue={values.priceFrom} className={field} />
+              </div>
+              <div>
+                <label className={label} htmlFor="registrationUrl">Ticket URL</label>
+                <input id="registrationUrl" name="registrationUrl" defaultValue={values.registrationUrl} placeholder="https://" className={field} />
+                <p className="mt-1.5 text-xs text-(--sub-text)">Checkout comes later — for now this opens the ticket site.</p>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-(--sub-text)">
+              Free events show the registration form when Registration open is checked.
+            </p>
+          )}
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
-          <UploadField name="coverImage" label="Cover image" defaultValue={values.coverImage} hint="1600 × 900 works best" />
+          <CoverImageField
+            name="coverImage"
+            label="Cover image"
+            defaultValue={values.coverImage}
+            hint="Optional. Without one, a red pattern cover is used."
+          />
         </div>
       </div>
     </form>

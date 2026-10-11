@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { saveEpisode } from "@/lib/actions/episodes";
 import type { ActionState } from "@/lib/actions/_result";
 import { UploadField } from "@/components/ui/UploadField";
+import { CoverImageField } from "@/components/admin/CoverImageField";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -108,7 +109,7 @@ export function EpisodeForm({ values }: { values: EpisodeValues }) {
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
-          <UploadField name="coverImage" label="Cover artwork" defaultValue={values.coverImage} hint="Square, 1400 × 1400" />
+          <CoverImageField name="coverImage" label="Cover artwork" defaultValue={values.coverImage} hint="Square, 1400 × 1400" shape="tile" />
         </div>
       </div>
     </form>

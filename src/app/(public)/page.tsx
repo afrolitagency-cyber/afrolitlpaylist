@@ -6,11 +6,14 @@ import { WidgetSidebar } from "@/components/widgets/Sidebar";
 import { TrendingSpotlight } from "@/components/public/albums/TrendingSpotlight";
 import { AlbumStrip } from "@/components/public/albums/AlbumStrip";
 import { getChart } from "@/lib/albums";
+import { getUpcomingEvents } from "@/lib/events";
 import { NewsletterSignup } from "@/components/public/NewsletterSignup";
 import { ArtistCoverflow, type CoverArtist } from "@/components/public/ArtistCoverflow";
+import { EventsSlider } from "@/components/public/events/EventsSlider";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { WidgetSkeleton } from "@/components/ui/Skeleton";
 import type { Story } from "@/components/themes/types";
+import Link from "next/link";
 
 export const revalidate = 300;
 
@@ -27,7 +30,7 @@ type PostRow = {
 };
 
 export default async function HomePage() {
-  const [themeKey, posts, artistRows, chart, albumStyles] = await Promise.all([
+  const [themeKey, posts, artistRows, chart, albumStyles, upcoming] = await Promise.all([
     getActiveTheme(),
     prisma.post.findMany({
       where: { status: "PUBLISHED" },
@@ -46,6 +49,7 @@ export default async function HomePage() {
     }),
     getChart(6),
     getAlbumStyles(),
+    getUpcomingEvents(6),
   ]);
 
   const artists: CoverArtist[] = artistRows.map((a) => ({
@@ -89,6 +93,23 @@ export default async function HomePage() {
       {/* WebSite + Organization: enables the sitelinks search box in Google */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteLd) }} />
       {lead ? <Hero lead={lead} secondary={rest.slice(0, 3)} /> : null}
+
+      {upcoming.length ? (
+        <section className="py-8" aria-labelledby="home-events-title">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-(--primary)">Live · Upcoming</p>
+              <h2 id="home-events-title" className="mt-2 text-[clamp(1.7rem,3.8vw,2.4rem)] font-bold tracking-tight">
+                Don’t miss the next one
+              </h2>
+            </div>
+            <Link href="/events" className="text-xs font-bold uppercase tracking-wide text-(--primary) hover:underline">
+              All events →
+            </Link>
+          </div>
+          <EventsSlider events={upcoming} />
+        </section>
+      ) : null}
 
       <ArtistCoverflow artists={artists} />
 

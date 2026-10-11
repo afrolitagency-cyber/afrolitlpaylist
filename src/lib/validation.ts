@@ -43,6 +43,12 @@ export const reviewDecisionInput = z
     path: ["note"],
   });
 
+const scheduleItem = z.object({
+  time: z.string().min(1).max(40),
+  title: z.string().min(1).max(120),
+  note: z.string().max(200).optional(),
+});
+
 export const eventInput = z.object({
   title: z.string().min(3).max(200),
   slug,
@@ -53,14 +59,22 @@ export const eventInput = z.object({
   venue: z.string().max(200).optional().nullable(),
   address: z.string().max(300).optional().nullable(),
   country: z.string().max(80).optional().nullable(),
+  city: z.string().max(80).optional().nullable(),
+  eventType: z.string().max(40).optional().nullable(),
+  ageLimit: z.string().max(40).optional().nullable(),
+  schedule: z.array(scheduleItem).max(20).default([]),
   seriesId: z.string().cuid().optional().nullable(),
   lineupArtistIds: z.array(z.string().cuid()).max(40).default([]),
   registrationOpen: z.boolean().default(false),
-  registrationUrl: z.string().url().optional().nullable(),
+  registrationUrl: z.union([z.string().url(), z.literal("")]).optional().nullable()
+    .transform((v) => (v ? v : null)),
+  ticketed: z.boolean().default(false),
+  priceFrom: z.number().int().nonnegative().optional().nullable(),
   capacity: z.number().int().positive().optional().nullable(),
   soldOut: z.boolean().default(false),
   status: z.enum(["DRAFT", "SCHEDULED", "PUBLISHED", "ARCHIVED"]),
-  coverImage: z.string().url().optional().nullable(),
+  coverImage: z.union([z.string().url(), z.literal("")]).optional().nullable()
+    .transform((v) => (v ? v : null)),
 });
 
 const httpsUrl = z.string().url().max(2000).refine((u) => u.startsWith("https://"), "Use an https:// link");
