@@ -28,6 +28,9 @@ export function EventForm({
   const [state, action, pending] = useActionState<ActionState, FormData>(saveEvent, null);
   const [status, setStatus] = useState(values.status);
   const [ticketed, setTicketed] = useState(values.ticketed);
+  const detail = state && !state.ok && state.fieldErrors
+    ? Object.entries(state.fieldErrors).map(([name, messages]) => `${name}: ${messages?.[0] ?? "invalid"}`).join(" ")
+    : null;
 
   return (
     <form action={action} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
@@ -38,7 +41,7 @@ export function EventForm({
         {state ? (
           <p role={state.ok ? "status" : "alert"}
             className={`rounded border p-3 text-sm ${state.ok ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-(--primary)/40 bg-(--primary)/10 text-(--primary)"}`}>
-            {state.ok ? state.message : state.error}
+            {state.ok ? state.message : [state.error, detail].filter(Boolean).join(" ")}
           </p>
         ) : null}
 
@@ -51,6 +54,7 @@ export function EventForm({
             <div>
               <label className={label} htmlFor="slug">Slug</label>
               <input id="slug" name="slug" defaultValue={values.slug} className={field} />
+              <p className="mt-1.5 text-xs text-(--sub-text)">Leave blank to generate from the title.</p>
             </div>
             <div>
               <label className={label} htmlFor="seriesId">Series</label>

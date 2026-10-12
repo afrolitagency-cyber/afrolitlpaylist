@@ -51,9 +51,12 @@ const scheduleItem = z.object({
 
 export const eventInput = z.object({
   title: z.string().min(3).max(200),
-  slug,
+  slug: slug.optional(),
   description: z.string().max(5000).optional().nullable(),
-  startsAt: z.coerce.date(),
+  startsAt: z.coerce.date({
+    required_error: "Set when the event starts.",
+    invalid_type_error: "Set when the event starts.",
+  }),
   doorsAt: z.coerce.date().optional().nullable(),
   timezone: z.string().default("Africa/Lagos"),
   venue: z.string().max(200).optional().nullable(),
