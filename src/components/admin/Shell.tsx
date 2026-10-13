@@ -18,6 +18,7 @@ type IconName =
   | "inbox"
   | "analytics"
   | "media"
+  | "ads"
   | "categories"
   | "emails"
   | "users"
@@ -39,6 +40,7 @@ const NAV: Item[] = [
   { label: "Contact inbox", href: "/admin/inbox", icon: "inbox" },
   { label: "Analytics", href: "/admin/analytics", icon: "analytics" },
   { label: "Media library", href: "/admin/media", icon: "media" },
+  { label: "Ads", href: "/admin/ads", icon: "ads", roles: ["ADMIN"] },
   { label: "Categories", href: "/admin/taxonomy", icon: "categories" },
   { label: "Email templates", href: "/admin/emails", icon: "emails", roles: ["ADMIN"] },
   { label: "Users", href: "/admin/users", icon: "users", roles: ["ADMIN"] },
@@ -144,6 +146,13 @@ function NavIcon({ name }: { name: IconName }) {
       return (
         <svg {...props}>
           <path d="M4 19V10M10 19V5M16 19v-7M22 19H2" />
+        </svg>
+      );
+    case "ads":
+      return (
+        <svg {...props}>
+          <rect x="3" y="6" width="18" height="12" rx="2" />
+          <path d="M7 10h4M7 14h10" />
         </svg>
       );
     case "media":

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getActiveTheme, getAlbumStyles } from "@/lib/settings";
 import { loadTheme } from "@/components/themes/registry";
 import { WidgetSidebar } from "@/components/widgets/Sidebar";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { TrendingSpotlight } from "@/components/public/albums/TrendingSpotlight";
 import { AlbumStrip } from "@/components/public/albums/AlbumStrip";
 import { getChart } from "@/lib/albums";
@@ -94,6 +95,8 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteLd) }} />
       {lead ? <Hero lead={lead} secondary={rest.slice(0, 3)} /> : null}
 
+      <AdSlot placement="TOP_LEADERBOARD" path="/" />
+
       {upcoming.length ? (
         <section className="py-8" aria-labelledby="home-events-title">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -130,6 +133,8 @@ export default async function HomePage() {
             </div>
           )}
 
+          <AdSlot placement="IN_FEED_NATIVE" path="/" />
+
           <section className="mt-10 rounded-xl bg-(--surface-alt) p-10 text-center">
             <h2 className="mb-2 text-[clamp(26px,3vw,32px)] font-black">Never miss a drop</h2>
             <NewsletterSignup />
@@ -138,9 +143,11 @@ export default async function HomePage() {
 
         {/* Streams in separately: the stories render immediately, widgets follow. */}
         <Suspense fallback={<div className="flex flex-col gap-5"><WidgetSkeleton /><WidgetSkeleton /><WidgetSkeleton /></div>}>
-          <WidgetSidebar />
+          <WidgetSidebar path="/" />
         </Suspense>
       </div>
+
+      <AdSlot placement="BOTTOM_LEADERBOARD" path="/" />
     </div>
   );
 }

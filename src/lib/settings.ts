@@ -16,6 +16,7 @@ export const SETTING_KEYS = {
   behaviour: "site.behaviour",
   embed: "site.embed",
   albumStyle: "site.albumStyle",
+  adsPublic: "site.adsPublic",
 } as const;
 
 export const ALBUM_STYLES = ["spotlight", "strip"] as const;

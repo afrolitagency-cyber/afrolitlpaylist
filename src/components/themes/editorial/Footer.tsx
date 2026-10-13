@@ -1,10 +1,11 @@
 import Link from "next/link";
+import type { Route } from "next";
 import type { FooterProps } from "../types";
 
 const COLS = [
   { h: "Explore", links: [["Artists", "/artists"], ["Blog", "/blog"], ["Episodes", "/episodes"], ["Gallery", "/gallery"]] },
   { h: "Community", links: [["Events", "/events"], ["Contact Us", "/contact"]] },
-  { h: "Company", links: [["About", "/about"], ["Advertise", "/contact"]] },
+  { h: "Company", links: [["About", "/about"], ["Advertise", "/advertise"]] },
 ] as const;
 
 export default function Footer({ identity }: FooterProps) {
@@ -16,7 +17,7 @@ export default function Footer({ identity }: FooterProps) {
             <div key={c.h}>
               <h5 className="mb-3 text-[13px] font-bold">{c.h}</h5>
               {c.links.map(([label, href]) => (
-                <Link key={href} href={href} className="block py-1 text-[13px] text-(--footer-text) hover:text-(--primary)">{label}</Link>
+                <Link key={href} href={href as Route} className="block py-1 text-[13px] text-(--footer-text) hover:text-(--primary)">{label}</Link>
               ))}
             </div>
           ))}

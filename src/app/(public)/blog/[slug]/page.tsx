@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { CommentForm } from "@/components/public/CommentForm";
 import { ViewBeacon } from "@/components/public/ViewBeacon";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 export const revalidate = 300;
 
@@ -77,6 +78,8 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         </div>
       ) : null}
 
+      <AdSlot placement="TOP_LEADERBOARD" path={`/blog/${post.slug}`} />
+
       <div className="mx-auto max-w-[760px]">
         {post.excerpt ? <p className="mb-6 text-[19px] leading-relaxed">{post.excerpt}</p> : null}
 
@@ -112,6 +115,8 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           )}
         </section>
       </div>
+
+      <AdSlot placement="BOTTOM_LEADERBOARD" path={`/blog/${post.slug}`} />
     </article>
   );
 }

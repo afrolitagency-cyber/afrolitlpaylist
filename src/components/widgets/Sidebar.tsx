@@ -7,6 +7,7 @@ import { normalizeEmbedUrl } from "@/lib/embedUrl";
 import { EventsCarousel } from "./EventsCarousel";
 import { NowPlayingWidget } from "./NowPlayingWidget";
 import { NewsletterSignup } from "@/components/public/NewsletterSignup";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { TrackedExternalLink } from "@/components/public/TrackedExternalLink";
 
 function Widget({ title, children }: { title: string; children: React.ReactNode }) {
@@ -25,7 +26,7 @@ const SERVICE = {
 
 /** The widget rail shared by every template. Each widget hides itself when it
  *  has no data, so a new site shows a clean column rather than empty boxes. */
-export async function WidgetSidebar() {
+export async function WidgetSidebar({ path = "/" }: { path?: string }) {
   const [trending, events, nowPlaying, listen, embedSetting] = await Promise.all([
     getTrending(),
     getUpcomingEvents(),
@@ -40,6 +41,7 @@ export async function WidgetSidebar() {
 
   return (
     <aside className="flex flex-col gap-5">
+      <AdSlot placement="SIDEBAR_RECTANGLE" path={path} />
       <Widget title="Search">
         <form action="/search" className="flex overflow-hidden rounded border border-(--border) bg-(--input-bg)">
           <input name="q" placeholder="Artists, posts, episodes" aria-label="Search"

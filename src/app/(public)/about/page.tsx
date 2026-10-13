@@ -51,11 +51,17 @@ export default async function AboutPage() {
 
         <h2 className="mb-3 mt-9 text-2xl font-extrabold">Work with us</h2>
         <p className="leading-[1.8] text-(--sub-text)">
-          Submissions, press enquiries, event listings and advertising all go through one inbox.
+          Submissions, press and event listings go through the inbox. Advertising has its own page —
+          placements, sizes and how a campaign runs.
         </p>
-        <Link href="/contact" className="mt-5 inline-block rounded bg-(--primary) px-5 py-3 text-sm font-semibold text-white">
-          Get in touch
-        </Link>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link href="/advertise" className="inline-block rounded bg-(--primary) px-5 py-3 text-sm font-semibold text-white">
+            Advertise
+          </Link>
+          <Link href="/contact" className="inline-block rounded border border-(--border-strong) px-5 py-3 text-sm font-semibold">
+            Get in touch
+          </Link>
+        </div>
       </div>
     </div>
   );

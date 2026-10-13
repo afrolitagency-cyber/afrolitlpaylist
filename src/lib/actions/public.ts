@@ -93,6 +93,8 @@ export async function sendContactMessage(_prev: ActionState, formData: FormData)
     const subject = String(formData.get("subject") ?? "").trim();
     const body = String(formData.get("body") ?? "").trim();
     const honeypot = String(formData.get("website") ?? "");
+    const kindRaw = String(formData.get("kind") ?? "general").trim();
+    const kind = ["general", "advertising", "press", "event"].includes(kindRaw) ? kindRaw : "general";
 
     if (honeypot) return { ok: true, message: "Thanks — we'll be in touch." };
     if (!name || !email || body.length < 10) {
@@ -104,7 +106,7 @@ export async function sendContactMessage(_prev: ActionState, formData: FormData)
     }
 
     await prisma.contactMessage.create({
-      data: { name, email, subject: subject || null, body, kind: "general", status: "NEW" },
+      data: { name, email, subject: subject || null, body, kind, status: "NEW" },
     });
     revalidatePath("/admin/inbox");
     void track({ name: "contact_submit", path: "/contact" });

@@ -53,4 +53,5 @@ export const LIMITS = {
   register: { max: 5, windowSec: 60 * 60 },
   views: { max: 60, windowSec: 60 },
   events: { max: 30, windowSec: 60 },
+  ads: { max: 120, windowSec: 60 },
 } as const;

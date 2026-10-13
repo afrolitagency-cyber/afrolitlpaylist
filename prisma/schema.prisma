@@ -603,3 +603,77 @@ model AnalyticsEvent {
   @@index([entityId])
   @@index([label])
 }
+
+// ─────────────────────────────────────────────── ads
+
+enum AdPlacement {
+  TOP_LEADERBOARD
+  IN_FEED_NATIVE
+  SIDEBAR_RECTANGLE
+  BOTTOM_LEADERBOARD
+}
+
+enum AdFillMode {
+  DIRECT_ONLY
+  DIRECT_THEN_NETWORK
+  NETWORK_ONLY
+  HOUSE_ONLY
+}
+
+enum AdCreativeKind {
+  IMAGE
+  HTML
+}
+
+model AdSlot {
+  id          String      @id @default(cuid())
+  placement   AdPlacement @unique
+  enabled     Boolean     @default(true)
+  fillMode    AdFillMode  @default(DIRECT_ONLY)
+  networkCode String?
+  /// Route prefixes where this slot never renders, e.g. ["/artists/"].
+  disabledOn  String[]    @default([])
+  creatives   AdCreative[]
+}
+
+model AdCreative {
+  id             String         @id @default(cuid())
+  slotId         String
+  slot           AdSlot         @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  name           String
+  advertiser     String?
+  kind           AdCreativeKind @default(IMAGE)
+  imageUrl       String?
+  imageUrlMobile String?
+  altText        String?
+  clickUrl       String?
+  /// Native creatives only. A native ad is a headline, not a banner.
+  headline       String?
+  body           String?
+  thumbUrl       String?
+  ctaLabel       String?
+  html           String?        @db.Text
+  trackerUrl     String?
+  weight         Int            @default(1)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  active         Boolean        @default(true)
+  isHouse        Boolean        @default(false)
+  impressions    Int            @default(0)
+  clicks         Int            @default(0)
+  stats          AdStatDaily[]
+
+  @@index([slotId, active, startsAt, endsAt])
+}
+
+model AdStatDaily {
+  id          String     @id @default(cuid())
+  creativeId  String
+  creative    AdCreative @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  day         DateTime   @db.Date
+  impressions Int        @default(0)
+  clicks      Int        @default(0)
+
+  @@unique([creativeId, day])
+  @@index([day])
+}

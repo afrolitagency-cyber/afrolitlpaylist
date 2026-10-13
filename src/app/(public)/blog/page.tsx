@@ -1,8 +1,12 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getActiveTheme } from "@/lib/settings";
 import { loadTheme } from "@/components/themes/registry";
 import type { Story } from "@/components/themes/types";
+import { AdSlot } from "@/components/ads/AdSlot";
+import { WidgetSidebar } from "@/components/widgets/Sidebar";
+import { WidgetSkeleton } from "@/components/ui/Skeleton";
 
 export const revalidate = 300;
 export const metadata = { title: "Blog" };
@@ -63,26 +67,39 @@ export default async function BlogIndex({
         ))}
       </div>
 
-      <SectionHead title={category ? `${category} stories` : "Latest stories"} />
-      {stories.length === 0 ? (
-        <p className="text-(--sub-text)">Nothing published here yet.</p>
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {stories.map((s) => <ArticleCard key={s.slug} story={s} />)}
-        </div>
-      )}
+      <AdSlot placement="TOP_LEADERBOARD" path="/blog" />
 
-      {pages > 1 ? (
-        <nav className="mt-9 flex justify-center gap-2" aria-label="Pagination">
-          {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
-            <Link key={n} href={`/blog?${category ? `category=${category}&` : ""}page=${n}`}
-              aria-current={n === current ? "page" : undefined}
-              className={`grid h-10 min-w-10 place-items-center rounded border px-3 font-bold ${n === current ? "border-(--primary) bg-(--primary) text-white" : "border-(--border-strong)"}`}>
-              {n}
-            </Link>
-          ))}
-        </nav>
-      ) : null}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <main>
+          <SectionHead title={category ? `${category} stories` : "Latest stories"} />
+          {stories.length === 0 ? (
+            <p className="text-(--sub-text)">Nothing published here yet.</p>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2">
+              {stories.map((s) => <ArticleCard key={s.slug} story={s} />)}
+            </div>
+          )}
+
+          <AdSlot placement="IN_FEED_NATIVE" path="/blog" />
+
+          {pages > 1 ? (
+            <nav className="mt-9 flex justify-center gap-2" aria-label="Pagination">
+              {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
+                <Link key={n} href={`/blog?${category ? `category=${category}&` : ""}page=${n}`}
+                  aria-current={n === current ? "page" : undefined}
+                  className={`grid h-10 min-w-10 place-items-center rounded border px-3 font-bold ${n === current ? "border-(--primary) bg-(--primary) text-white" : "border-(--border-strong)"}`}>
+                  {n}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
+        </main>
+        <Suspense fallback={<div className="flex flex-col gap-5"><WidgetSkeleton /><WidgetSkeleton /><WidgetSkeleton /></div>}>
+          <WidgetSidebar path="/blog" />
+        </Suspense>
+      </div>
+
+      <AdSlot placement="BOTTOM_LEADERBOARD" path="/blog" />
     </div>
   );
 }
