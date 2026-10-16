@@ -69,4 +69,6 @@ export const can = {
   sendCampaigns: ["ADMIN"] as Role[],
   manageUsers: ["ADMIN"] as Role[],
   manageSettings: ["ADMIN"] as Role[],
+  /** Scanner-only. Must never be added to manageContent. */
+  scanDoor: ["ADMIN", "EDITOR", "DOOR"] as Role[],
 };

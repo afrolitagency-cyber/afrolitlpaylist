@@ -9,15 +9,33 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const FROM = process.env.RESEND_FROM ?? "AfroLitPlaylist <hello@afrolitplaylist.com>";
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.afrolitplaylist.com";
 
-type Mail = { to: string; subject: string; html: string };
+type Mail = {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  attachments?: { filename: string; content: Buffer; contentId?: string }[];
+};
 
-async function send({ to, subject, html }: Mail): Promise<boolean> {
+async function send({ to, subject, html, text, attachments }: Mail): Promise<boolean> {
   if (!resend) {
     console.info(`[email:dev] → ${to} · ${subject}`);
     return false;
   }
   try {
-    const result = await resend.emails.send({ from: FROM, to, subject, html });
+    const result = await resend.emails.send({
+      from: FROM,
+      to,
+      subject,
+      html,
+      text,
+      attachments: attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        contentId: a.contentId,
+        content_id: a.contentId,
+      })),
+    });
     if (result.error) {
       console.error("[email] send failed", result.error);
       return false;
@@ -166,6 +184,10 @@ export function sendNewsletterConfirm(to: string, token: string) {
       { href: `${SITE}/newsletter/confirm?token=${token}`, label: "Confirm subscription" },
     ),
   });
+}
+
+export function sendRaw(mail: Mail) {
+  return send(mail);
 }
 
 export function sendCampaign(to: string, subject: string, html: string, unsubToken: string) {

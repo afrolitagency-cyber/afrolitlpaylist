@@ -46,12 +46,19 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
       priceFrom: formData.get("priceFrom") ? Number(formData.get("priceFrom")) : null,
       capacity: formData.get("capacity") ? Number(formData.get("capacity")) : null,
       soldOut: formData.get("soldOut") === "on",
+      presentedBy: formData.get("presentedBy") || null,
+      presentedByArtistId: formData.get("presentedByArtistId") || null,
+      hostContact: formData.get("hostContact") || null,
+      hostShareBps: formData.get("hostSharePercent")
+        ? Math.min(100, Math.max(0, Math.trunc(Number(formData.get("hostSharePercent"))))) * 100
+        : 0,
+      settlementNote: formData.get("settlementNote") || null,
       status: formData.get("status"),
       coverImage: formData.get("coverImage") || null,
     });
 
     const slug = await uniqueSlug("event", data.slug || data.title, id || undefined);
-    const { lineupArtistIds, seriesId, ...rest } = data;
+    const { lineupArtistIds, seriesId, presentedByArtistId, ...rest } = data;
     const lineup = lineupArtistIds.map((artistId) => ({ id: artistId }));
 
     // Prisma forbids mixing a raw foreign key (seriesId) with relation writes (lineup),
@@ -64,6 +71,9 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
             slug,
             lineup: { set: lineup },
             series: seriesId ? { connect: { id: seriesId } } : { disconnect: true },
+            presentedByArtist: presentedByArtistId
+              ? { connect: { id: presentedByArtistId } }
+              : { disconnect: true },
           },
         })
       : await prisma.event.create({
@@ -72,6 +82,9 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
             slug,
             lineup: { connect: lineup },
             ...(seriesId ? { series: { connect: { id: seriesId } } } : {}),
+            ...(presentedByArtistId
+              ? { presentedByArtist: { connect: { id: presentedByArtistId } } }
+              : {}),
           },
         });
 

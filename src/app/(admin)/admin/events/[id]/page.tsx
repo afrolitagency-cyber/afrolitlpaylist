@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, can } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
 import { EventForm, type EventValues } from "@/components/admin/EventForm";
+import { TicketTiersForm } from "@/components/admin/TicketTiersForm";
 import { readSchedule } from "@/lib/events";
+import { bpsToPercent } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,9 @@ const BLANK: EventValues = {
   venue: "", address: "", country: "", city: "", eventType: "", ageLimit: "", schedule: "",
   seriesId: "", lineupArtistIds: [],
   registrationOpen: false, registrationUrl: "", ticketed: false, priceFrom: "",
-  capacity: "", soldOut: false, status: "DRAFT", coverImage: "",
+  capacity: "", soldOut: false,
+  presentedBy: "", presentedByArtistId: "", hostContact: "", hostSharePercent: "0", settlementNote: "",
+  status: "DRAFT", coverImage: "",
 };
 
 export default async function EventEditor({ params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +30,7 @@ export default async function EventEditor({ params }: { params: Promise<{ id: st
   const user = await requireRole(...can.manageContent);
   const isNew = id === "new";
 
-  const [event, series, artists, regs] = await Promise.all([
+  const [event, series, artists, regs, tiers] = await Promise.all([
     isNew ? null : prisma.event.findUnique({ where: { id }, include: { lineup: { select: { id: true } } } }),
     prisma.eventSeries.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.artist.findMany({ orderBy: { name: "asc" }, take: 300, select: { id: true, name: true } }),
@@ -37,6 +41,12 @@ export default async function EventEditor({ params }: { params: Promise<{ id: st
           orderBy: { createdAt: "desc" },
           take: 200,
           select: { id: true, name: true, email: true, optIn: true, waitlist: true, createdAt: true },
+        }),
+    isNew
+      ? []
+      : prisma.ticketTier.findMany({
+          where: { eventId: id },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
         }),
   ]);
 
@@ -68,6 +78,11 @@ export default async function EventEditor({ params }: { params: Promise<{ id: st
         priceFrom: event.priceFrom != null ? String(event.priceFrom) : "",
         capacity: event.capacity ? String(event.capacity) : "",
         soldOut: event.soldOut,
+        presentedBy: event.presentedBy ?? "",
+        presentedByArtistId: event.presentedByArtistId ?? "",
+        hostContact: event.hostContact ?? "",
+        hostSharePercent: String(bpsToPercent(event.hostShareBps)),
+        settlementNote: event.settlementNote ?? "",
         status: event.status,
         coverImage: event.coverImage ?? "",
       }
@@ -79,6 +94,18 @@ export default async function EventEditor({ params }: { params: Promise<{ id: st
   return (
     <AdminShell role={user.role} email={user.email} title={isNew ? "New event" : "Edit event"} subtitle={event?.title ?? "Draft"}>
       <EventForm values={values} series={series} artists={artists} />
+
+      {!isNew ? (
+        <TicketTiersForm
+          eventId={id}
+          tiers={tiers}
+          venue={{
+            capacity: event?.capacity ?? null,
+            ticketsSold: event?.ticketsSold ?? 0,
+            ticketsHeld: event?.ticketsHeld ?? 0,
+          }}
+        />
+      ) : null}
 
       {!isNew ? (
         <div className="mt-8 grid gap-5 lg:grid-cols-2">

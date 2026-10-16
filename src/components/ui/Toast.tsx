@@ -3,9 +3,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 type Tone = "success" | "error" | "info";
-type Toast = { id: number; tone: Tone; message: string };
+type Toast = { id: number; tone: Tone; title?: string; message: string };
 
-const ToastContext = createContext<{ push: (message: string, tone?: Tone) => void } | null>(null);
+const ToastContext = createContext<{
+  push: (message: string, tone?: Tone, title?: string) => void;
+} | null>(null);
 
 export function useToast() {
   const ctx = useContext(ToastContext);
@@ -22,10 +24,10 @@ const TONE: Record<Tone, string> = {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const push = useCallback((message: string, tone: Tone = "info") => {
+  const push = useCallback((message: string, tone: Tone = "info", title?: string) => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, tone, message }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 5000);
+    setToasts((t) => [...t, { id, tone, title, message }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 6000);
   }, []);
 
   const value = useMemo(() => ({ push }), [push]);
@@ -39,6 +41,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((t) => (
           <div key={t.id} role="status"
             className={`pointer-events-auto w-full max-w-sm rounded-lg border p-3.5 text-sm shadow-lg ${TONE[t.tone]}`}>
+            {t.title ? <b className="mb-0.5 block text-[14.5px] text-inherit">{t.title}</b> : null}
             {t.message}
           </div>
         ))}

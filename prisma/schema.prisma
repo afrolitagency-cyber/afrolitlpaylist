@@ -19,6 +19,7 @@ enum Role {
   ADMIN
   EDITOR
   ARTIST
+  DOOR
 }
 
 enum UserStatus {
@@ -104,6 +105,7 @@ model Artist {
   stories      ArtistStory[]
   posts        Post[]
   events       Event[]             @relation("EventLineup")
+  hostedEvents Event[]             @relation("EventHost")
   galleryItems GalleryImage[]
   reviewEvents ArtistReviewEvent[]
 
@@ -387,17 +389,35 @@ model Event {
   /// Lowest ticket price in naira; shown as "From ₦…".
   priceFrom        Int?
   capacity         Int?
+  /// Venue ceiling, independent of tier allocations. Checkout holds these first.
+  ticketsSold      Int     @default(0)
+  ticketsHeld      Int     @default(0)
   soldOut          Boolean @default(false)
   calendarExport   Boolean @default(true)
 
+  currency            String  @default("NGN")
+  /// Display name, e.g. "Palmwine Records". Null = our own event.
+  presentedBy         String?
+  presentedByArtistId String?
+  presentedByArtist   Artist? @relation("EventHost", fields: [presentedByArtistId], references: [id], onDelete: SetNull)
+  hostContact         String?
+  /// Host cut in basis points. 7000 = 70%. 0 = ours entirely.
+  hostShareBps        Int     @default(0)
+  settlementNote      String? @db.Text
+  settledAt           DateTime?
+
   registrations EventRegistration[]
   galleryItems  GalleryImage[]
+  ticketTiers   TicketTier[]
+  orders        Order[]
+  tickets       Ticket[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status, startsAt])
   @@index([seriesId])
+  @@index([presentedByArtistId])
 }
 
 model EventRegistration {
@@ -412,6 +432,101 @@ model EventRegistration {
   createdAt DateTime @default(now())
 
   @@unique([eventId, email])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+model TicketTier {
+  id          String  @id @default(cuid())
+  eventId     String
+  event       Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  /// Minor units. Never a float.
+  priceKobo   Int
+  allocation  Int
+  sold        Int     @default(0)
+  held        Int     @default(0)
+  salesStartsAt DateTime?
+  salesEndsAt   DateTime?
+  maxPerOrder Int     @default(10)
+  /// How many people one ticket admits. 1 for a seat, 10 for a table of 10.
+  admitsCount Int     @default(1)
+  /// When this window closes with stock left, move the remainder here.
+  rollsIntoTierId String?
+  rollsIntoTier   TicketTier?  @relation("TierRollover", fields: [rollsIntoTierId], references: [id], onDelete: SetNull)
+  rolloverFrom    TicketTier[] @relation("TierRollover")
+  isComp      Boolean @default(false)
+  sortOrder   Int     @default(0)
+  active      Boolean @default(true)
+  createdAt   DateTime @default(now())
+
+  tickets    Ticket[]
+  orderItems OrderItem[]
+
+  @@index([eventId, active])
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  eventId    String
+  event      Event       @relation(fields: [eventId], references: [id])
+  buyerName  String
+  buyerEmail String
+  buyerPhone String?
+  status     OrderStatus @default(PENDING)
+  totalKobo  Int
+  feesKobo   Int?
+  currency   String      @default("NGN")
+  reference  String      @unique
+  paidAt     DateTime?
+  holdsUntil DateTime?
+  refundedAt DateTime?
+  refundNote String?
+
+  items     OrderItem[]
+  tickets   Ticket[]
+  createdAt DateTime    @default(now())
+
+  @@index([status, holdsUntil])
+  @@index([eventId, status])
+  @@index([buyerEmail])
+}
+
+model OrderItem {
+  id       String     @id @default(cuid())
+  orderId  String
+  order    Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  tierId   String
+  tier     TicketTier @relation(fields: [tierId], references: [id])
+  quantity Int
+  unitKobo Int
+}
+
+model Ticket {
+  id      String      @id @default(cuid())
+  orderId String?
+  order   Order?      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  tierId  String
+  tier    TicketTier  @relation(fields: [tierId], references: [id])
+  eventId String
+  event   Event       @relation(fields: [eventId], references: [id])
+  code    String      @unique
+  holderName String?
+  usedAt   DateTime?
+  usedBy   String?
+  voidedAt DateTime?
+  issuedBy String?
+  createdAt DateTime  @default(now())
+
+  @@index([eventId, usedAt])
+  @@index([eventId, voidedAt])
 }
 
 // ─────────────────────────────────────────────── gallery & media

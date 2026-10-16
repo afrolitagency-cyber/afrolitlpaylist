@@ -8,7 +8,7 @@ import { createInvite } from "@/lib/services/invite";
 import { sendArtistInvite } from "@/lib/services/email";
 import { runAction, type ActionState } from "./_result";
 
-const roleEnum = z.enum(["ADMIN", "EDITOR", "ARTIST"]);
+const roleEnum = z.enum(["ADMIN", "EDITOR", "ARTIST", "DOOR"]);
 
 export async function inviteUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {

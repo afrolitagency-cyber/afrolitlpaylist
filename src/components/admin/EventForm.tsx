@@ -15,6 +15,8 @@ export type EventValues = {
   eventType: string; ageLimit: string; schedule: string; seriesId: string;
   lineupArtistIds: string[]; registrationOpen: boolean; registrationUrl: string;
   ticketed: boolean; priceFrom: string; capacity: string; soldOut: boolean;
+  presentedBy: string; presentedByArtistId: string; hostContact: string;
+  hostSharePercent: string; settlementNote: string;
   status: string; coverImage: string;
 };
 
@@ -133,6 +135,41 @@ export function EventForm({
           </select>
           <p className="mt-1.5 text-xs text-(--sub-text)">Each name links to its artist page on the public listing.</p>
         </div>
+
+        <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
+          <h3 className="mb-1 text-[15px] font-bold">Presented by</h3>
+          <p className="mb-4 text-xs text-(--sub-text)">
+            Leave blank for our own show. On-behalf-of hosts still sell through AfroLit&apos;s Paystack.
+            Host share is paid after the event — not at checkout.
+          </p>
+          <div className="mb-4">
+            <label className={label} htmlFor="presentedBy">Credit on the event page</label>
+            <input id="presentedBy" name="presentedBy" defaultValue={values.presentedBy} placeholder="Palmwine Records" className={field} />
+          </div>
+          <div className="mb-4">
+            <label className={label} htmlFor="presentedByArtistId">Linked artist (optional)</label>
+            <select id="presentedByArtistId" name="presentedByArtistId" defaultValue={values.presentedByArtistId} className={field}>
+              <option value="">— none —</option>
+              {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+            <p className="mt-1.5 text-xs text-(--sub-text)">Independent of lineup. Puts the event on their profile later.</p>
+          </div>
+          <div className="mb-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={label} htmlFor="hostContact">Host contact</label>
+              <input id="hostContact" name="hostContact" defaultValue={values.hostContact} placeholder="email or phone" className={field} />
+            </div>
+            <div>
+              <label className={label} htmlFor="hostSharePercent">Host share (%)</label>
+              <input id="hostSharePercent" name="hostSharePercent" type="number" min={0} max={100} step={1} defaultValue={values.hostSharePercent} className={field} />
+              <p className="mt-1.5 text-xs text-(--sub-text)">Stored as basis points. 70 means 70%.</p>
+            </div>
+          </div>
+          <div>
+            <label className={label} htmlFor="settlementNote">Settlement note</label>
+            <textarea id="settlementNote" name="settlementNote" rows={3} defaultValue={values.settlementNote} className={field} />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -153,7 +190,7 @@ export function EventForm({
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <h3 className="mb-4 text-[15px] font-bold">Attendance</h3>
           <label className="flex items-center justify-between py-2.5 text-sm">
-            <span>Ticketed (external link)</span>
+            <span>Ticketed</span>
             <input
               type="checkbox"
               name="ticketed"
@@ -183,7 +220,7 @@ export function EventForm({
               <div>
                 <label className={label} htmlFor="registrationUrl">Ticket URL</label>
                 <input id="registrationUrl" name="registrationUrl" defaultValue={values.registrationUrl} placeholder="https://" className={field} />
-                <p className="mt-1.5 text-xs text-(--sub-text)">Checkout comes later — for now this opens the ticket site.</p>
+                <p className="mt-1.5 text-xs text-(--sub-text)">Optional until in-app checkout ships. From price is naira for display; tiers store kobo.</p>
               </div>
             </>
           ) : (
@@ -191,6 +228,9 @@ export function EventForm({
               Free events show the registration form when Registration open is checked.
             </p>
           )}
+          {!values.id ? (
+            <p className="mt-3 text-xs text-(--sub-text)">Save the event first, then add ticket tiers.</p>
+          ) : null}
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">

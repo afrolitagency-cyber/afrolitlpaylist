@@ -9,6 +9,7 @@ import {
 import { EventsSlider } from "@/components/public/events/EventsSlider";
 import { EventRows } from "@/components/public/events/EventRows";
 import { RegisterForm } from "@/components/public/RegisterForm";
+import { eventHasCheckout } from "@/lib/checkout";
 
 export const revalidate = 300;
 
@@ -38,6 +39,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const left = spotsLeft(event);
   const schedule = readSchedule(event.schedule);
   const more = await getUpcomingEvents(8);
+  const checkoutReady = event.ticketed ? await eventHasCheckout(event.id) : false;
   const doorsLabel = event.doorsAt ? formatTime(event.doorsAt, event.timezone) : null;
   const mapsQuery = [event.venue, event.address, event.city].filter(Boolean).join(", ");
 
@@ -174,7 +176,14 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                 {card.dateLabel} · {card.timeLabel}
                 {event.priceFrom != null ? ` · From ${naira(event.priceFrom)}` : ""}
               </p>
-              {event.registrationUrl ? (
+              {checkoutReady ? (
+                <Link
+                  href={`/events/${event.slug}/checkout`}
+                  className="mt-5 block w-full rounded-full bg-(--primary) py-3.5 text-center text-[13.5px] font-semibold text-black"
+                >
+                  Get tickets
+                </Link>
+              ) : event.registrationUrl ? (
                 <a
                   href={event.registrationUrl}
                   target="_blank"

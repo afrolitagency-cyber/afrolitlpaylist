@@ -75,6 +75,12 @@ export const eventInput = z.object({
   priceFrom: z.number().int().nonnegative().optional().nullable(),
   capacity: z.number().int().positive().optional().nullable(),
   soldOut: z.boolean().default(false),
+  presentedBy: z.string().max(160).optional().nullable().transform((v) => v?.trim() || null),
+  presentedByArtistId: z.union([z.string().cuid(), z.literal("")]).optional().nullable()
+    .transform((v) => (v ? v : null)),
+  hostContact: z.string().max(200).optional().nullable().transform((v) => v?.trim() || null),
+  hostShareBps: z.number().int().min(0).max(10_000).default(0),
+  settlementNote: z.string().max(4000).optional().nullable().transform((v) => v?.trim() || null),
   status: z.enum(["DRAFT", "SCHEDULED", "PUBLISHED", "ARCHIVED"]),
   coverImage: z.union([z.string().url(), z.literal("")]).optional().nullable()
     .transform((v) => (v ? v : null)),

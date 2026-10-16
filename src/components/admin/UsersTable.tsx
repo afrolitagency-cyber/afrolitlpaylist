@@ -34,6 +34,7 @@ export function UsersTable({ users }: { users: UserRow[] }) {
           <select id="role" name="role" defaultValue="ARTIST" className={field}>
             <option value="ARTIST">Artist</option>
             <option value="EDITOR">Editor</option>
+            <option value="DOOR">Door</option>
             <option value="ADMIN">Admin</option>
           </select>
         </div>
@@ -63,6 +64,7 @@ export function UsersTable({ users }: { users: UserRow[] }) {
                 <select name="role" defaultValue={u.role} className={field} aria-label={`Role for ${u.email}`}>
                   <option value="ARTIST">Artist</option>
                   <option value="EDITOR">Editor</option>
+                  <option value="DOOR">Door</option>
                   <option value="ADMIN">Admin</option>
                 </select>
                 <button type="submit" className="rounded border border-(--border-strong) px-3 py-2 text-xs font-bold">Save</button>

@@ -18,6 +18,9 @@ export default async function middleware(req: NextRequest) {
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     if (!role) return NextResponse.redirect(new URL("/admin/login", req.url));
     if (role === "ARTIST") return NextResponse.redirect(new URL("/portal", req.url));
+    if (role === "DOOR" && !pathname.startsWith("/admin/scan")) {
+      return NextResponse.redirect(new URL("/admin/login", req.url));
+    }
   }
 
   if (pathname.startsWith("/portal") && !pathname.startsWith("/portal/login") && !pathname.startsWith("/portal/invite")) {
