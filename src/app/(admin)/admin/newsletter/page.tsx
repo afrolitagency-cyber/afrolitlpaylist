@@ -35,13 +35,16 @@ export default async function NewsletterPage() {
         {campaigns.length === 0 ? (
           <p className="p-6 text-sm text-(--sub-text)">No campaigns yet.</p>
         ) : (
-          campaigns.map((c: { id: string; subject: string; audienceTag: string | null; status: string; scheduledAt: Date | null; sentAt: Date | null; recipients: number | null }) => (
+          campaigns.map((c) => (
             <div key={c.id} className="flex flex-wrap items-center gap-4 border-b border-(--border-strong) px-5 py-3.5 last:border-0">
               <div className="min-w-0 flex-1">
                 <Link href={`/admin/newsletter/${c.id}`} className="block truncate text-sm font-bold hover:text-(--primary)">{c.subject}</Link>
                 <span className="text-xs text-(--sub-text)">
-                  {c.audienceTag ? `Tag: ${c.audienceTag}` : "All confirmed subscribers"}
+                  {c.kind === "BLOG_DIGEST" ? "Blog digest" : c.kind === "EVENTS" ? "Events" : c.audienceTag ? `Custom · ${c.audienceTag}` : "Custom"}
                   {c.recipients ? ` · ${c.recipients} sent` : ""}
+                  {c.archiveSlug && ["SCHEDULED", "SENDING", "SENT"].includes(c.status) ? (
+                    <> · <Link href={`/newsletter/issue/${c.archiveSlug}`} className="underline">Archive</Link></>
+                  ) : null}
                 </span>
               </div>
               <span className="hidden text-xs text-(--sub-text) sm:block">

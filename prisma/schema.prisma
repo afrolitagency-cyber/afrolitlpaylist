@@ -581,18 +581,29 @@ enum SubscriberStatus {
   PENDING
   CONFIRMED
   UNSUBSCRIBED
+  BOUNCED
+  COMPLAINED
 }
 
 model NewsletterSubscriber {
   id          String           @id @default(cuid())
   email       String           @unique
+  firstName   String?
   status      SubscriberStatus @default(PENDING)
   tags        String[]
+  /// Confirm-opt-in only. Sends never write this. Manage/unsub is HMAC, not stored.
   tokenHash   String?          @unique
+  confirmExpiresAt DateTime?
+  wantsBlog   Boolean          @default(true)
+  wantsEvents Boolean          @default(true)
   confirmedAt DateTime?
   createdAt   DateTime         @default(now())
 
+  deliveries CampaignDelivery[]
+
   @@index([status])
+  @@index([status, wantsBlog])
+  @@index([status, wantsEvents])
 }
 
 enum CampaignStatus {
@@ -601,15 +612,29 @@ enum CampaignStatus {
   SENDING
   SENT
   FAILED
+  CANCELED
+}
+
+enum CampaignKind {
+  BLOG_DIGEST
+  EVENTS
+  CUSTOM
 }
 
 model Campaign {
   id          String         @id @default(cuid())
+  kind        CampaignKind   @default(CUSTOM)
   subject     String
   previewText String?
   fromName    String?
   fromEmail   String?
+  /// Composer / chosen post-event ids. Not used as the send body.
   body        Json?
+  content     Json?
+  /// Frozen render at schedule time. Send path reads this, never String(body).
+  html        String?        @db.Text
+  text        String?        @db.Text
+  archiveSlug String?        @unique
   audienceTag String?
   status      CampaignStatus @default(DRAFT)
   scheduledAt DateTime?
@@ -617,11 +642,43 @@ model Campaign {
   recipients  Int?
   opens       Int            @default(0)
   clicks      Int            @default(0)
+  /// Enqueue bookmark only (last subscriber id paged in). Send resume uses delivery rows.
+  lastSubscriberId String?
+  enqueueDone      Boolean   @default(false)
+
+  deliveries CampaignDelivery[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status, scheduledAt])
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model CampaignDelivery {
+  id           String         @id @default(cuid())
+  campaignId   String
+  campaign     Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subscriberId String
+  subscriber   NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  status       DeliveryStatus @default(PENDING)
+  attempts     Int            @default(0)
+  claimedAt    DateTime?
+  providerId   String?
+  error        String?        @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([campaignId, subscriberId])
+  @@index([campaignId, status])
 }
 
 enum MessageStatus {

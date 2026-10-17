@@ -14,37 +14,110 @@ type Mail = {
   subject: string;
   html: string;
   text?: string;
+  from?: string;
+  headers?: Record<string, string>;
+  idempotencyKey?: string;
   attachments?: { filename: string; content: Buffer; contentId?: string }[];
 };
 
-async function send({ to, subject, html, text, attachments }: Mail): Promise<boolean> {
+type SendResult = { ok: boolean; id?: string; error?: string };
+
+function payload(mail: Mail) {
+  return {
+    from: mail.from ?? FROM,
+    to: mail.to,
+    subject: mail.subject,
+    html: mail.html,
+    ...(mail.text ? { text: mail.text } : {}),
+    ...(mail.headers ? { headers: mail.headers } : {}),
+    ...(mail.attachments?.length
+      ? {
+          attachments: mail.attachments.map((a) => ({
+            filename: a.filename,
+            content: a.content,
+            contentId: a.contentId,
+            content_id: a.contentId,
+          })),
+        }
+      : {}),
+  };
+}
+
+async function send(mail: Mail): Promise<boolean> {
+  return (await sendOne(mail)).ok;
+}
+
+async function sendOne(mail: Mail): Promise<SendResult> {
   if (!resend) {
-    console.info(`[email:dev] → ${to} · ${subject}`);
-    return false;
+    console.info(`[email:dev] → ${mail.to} · ${mail.subject}`);
+    return { ok: false, error: "RESEND_API_KEY missing" };
   }
   try {
-    const result = await resend.emails.send({
-      from: FROM,
-      to,
-      subject,
-      html,
-      text,
-      attachments: attachments?.map((a) => ({
-        filename: a.filename,
-        content: a.content,
-        contentId: a.contentId,
-        content_id: a.contentId,
-      })),
-    });
+    const result = mail.idempotencyKey
+      ? await resend.emails.send(payload(mail), { idempotencyKey: mail.idempotencyKey })
+      : await resend.emails.send(payload(mail));
     if (result.error) {
       console.error("[email] send failed", result.error);
-      return false;
+      return { ok: false, error: result.error.message };
     }
-    return true;
+    return { ok: true, id: result.data?.id };
   } catch (err) {
     console.error("[email] send failed", err);
-    return false;
+    return { ok: false, error: err instanceof Error ? err.message : "send failed" };
   }
+}
+
+/** Up to 100. If the batch is rejected, caller should retry one at a time. */
+export async function sendCampaignBatch(mails: Mail[]): Promise<{
+  ok: boolean;
+  ids: (string | undefined)[];
+  error?: string;
+}> {
+  if (!mails.length) return { ok: true, ids: [] };
+  if (!resend) {
+    for (const m of mails) console.info(`[email:dev] → ${m.to} · ${m.subject}`);
+    return { ok: false, ids: [], error: "RESEND_API_KEY missing" };
+  }
+  if (mails.length === 1) {
+    const r = await sendOne(mails[0]!);
+    return { ok: r.ok, ids: [r.id], error: r.error };
+  }
+  const batch = (
+    resend as {
+      batch?: {
+        send: (
+          emails: ReturnType<typeof payload>[],
+        ) => Promise<{ error?: { message: string } | null; data?: { id?: string }[] | { data?: { id?: string }[] } }>;
+      };
+    }
+  ).batch;
+  if (!batch?.send) {
+    const ids: (string | undefined)[] = [];
+    for (const m of mails) {
+      const r = await sendOne(m);
+      if (!r.ok) return { ok: false, ids, error: r.error };
+      ids.push(r.id);
+    }
+    return { ok: true, ids };
+  }
+  try {
+    const result = await batch.send(mails.map(payload));
+    if (result.error) {
+      console.error("[email] batch failed", result.error);
+      return { ok: false, ids: [], error: result.error.message };
+    }
+    const ids = Array.isArray(result.data)
+      ? result.data.map((d: { id?: string }) => d.id)
+      : (result.data?.data as { id?: string }[] | undefined)?.map((d) => d.id) ?? [];
+    return { ok: true, ids };
+  } catch (err) {
+    console.error("[email] batch failed", err);
+    return { ok: false, ids: [], error: err instanceof Error ? err.message : "batch failed" };
+  }
+}
+
+export async function sendCampaignEmail(mail: Mail): Promise<SendResult> {
+  return sendOne(mail);
 }
 
 function layout(title: string, body: string, cta?: { href: string; label: string }) {
@@ -190,11 +263,11 @@ export function sendRaw(mail: Mail) {
   return send(mail);
 }
 
-export function sendCampaign(to: string, subject: string, html: string, unsubToken: string) {
+export function sendCampaign(to: string, subject: string, html: string, unsubHref: string) {
   return send({
     to,
     subject,
     html: `${html}<p style="margin-top:28px;font-size:12px;color:#777;text-align:center">
-      <a href="${SITE}/newsletter/unsubscribe?token=${unsubToken}" style="color:#777">Unsubscribe</a></p>`,
+      <a href="${unsubHref}" style="color:#777">Unsubscribe</a></p>`,
   });
 }

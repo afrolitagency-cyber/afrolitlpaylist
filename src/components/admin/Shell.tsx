@@ -268,6 +268,10 @@ export function StatusPill({ status }: { status: string }) {
     CHANGES_REQUESTED: "bg-orange-500/15 text-orange-300",
     REJECTED: "bg-(--primary)/15 text-(--primary)",
     SCHEDULED: "bg-amber-500/15 text-amber-300",
+    SENDING: "bg-sky-500/15 text-sky-300",
+    SENT: "bg-emerald-500/15 text-emerald-400",
+    FAILED: "bg-(--primary)/15 text-(--primary)",
+    CANCELED: "bg-(--surface-alt) text-(--sub-text)",
   };
   return (
     <span className={`inline-block rounded-full px-2.5 py-1 text-[11.5px] font-bold ${tone[status] ?? tone.DRAFT}`}>

@@ -13,10 +13,16 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
   if (token) {
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const sub = await prisma.newsletterSubscriber.findUnique({ where: { tokenHash } });
-    if (sub && sub.status !== "UNSUBSCRIBED") {
+    const expired = sub?.confirmExpiresAt ? sub.confirmExpiresAt.getTime() < Date.now() : false;
+    if (sub && !expired && sub.status !== "UNSUBSCRIBED" && sub.status !== "BOUNCED" && sub.status !== "COMPLAINED") {
       await prisma.newsletterSubscriber.update({
         where: { id: sub.id },
-        data: { status: "CONFIRMED", confirmedAt: new Date(), tokenHash: null },
+        data: {
+          status: "CONFIRMED",
+          confirmedAt: new Date(),
+          tokenHash: null,
+          confirmExpiresAt: null,
+        },
       });
       void track({ name: "newsletter_confirm", path: "/newsletter/confirm" });
       ok = true;

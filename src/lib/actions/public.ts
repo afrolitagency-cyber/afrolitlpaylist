@@ -7,6 +7,8 @@ import { commentInput, subscribeInput } from "@/lib/validation";
 import { sendNewsletterConfirm } from "@/lib/services/email";
 import { rateLimit, LIMITS } from "@/lib/rate-limit";
 import { track } from "@/lib/analytics";
+import { newConfirmToken, verifyManageToken } from "@/lib/newsletter-tokens";
+import { saveListPreferences } from "@/lib/newsletter-subscribe";
 import { runAction, type ActionState } from "./_result";
 
 const hash = (v: string) => crypto.createHash("sha256").update(v).digest("hex");
@@ -73,14 +75,21 @@ export async function subscribe(_prev: ActionState, formData: FormData): Promise
       return { ok: true, message: "Almost there — check your inbox to confirm." };
     }
 
-    const raw = crypto.randomBytes(32).toString("base64url");
+    const confirm = newConfirmToken();
     await prisma.newsletterSubscriber.upsert({
       where: { email },
-      create: { email, status: "PENDING", tokenHash: hash(raw) },
-      update: { status: "PENDING", tokenHash: hash(raw) },
+      create: {
+        email,
+        status: "PENDING",
+        tokenHash: confirm.hash,
+        confirmExpiresAt: confirm.expiresAt,
+        wantsBlog: true,
+        wantsEvents: true,
+      },
+      update: { status: "PENDING", tokenHash: confirm.hash, confirmExpiresAt: confirm.expiresAt },
     });
 
-    await sendNewsletterConfirm(email, raw);
+    await sendNewsletterConfirm(email, confirm.raw);
     void track({ name: "newsletter_subscribe" });
     return { ok: true, message: "Almost there — check your inbox to confirm." };
   });
@@ -111,5 +120,21 @@ export async function sendContactMessage(_prev: ActionState, formData: FormData)
     revalidatePath("/admin/inbox");
     void track({ name: "contact_submit", path: "/contact" });
     return { ok: true, message: "Thanks — we'll be in touch." };
+  });
+}
+
+export async function savePreferences(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const s = String(formData.get("s") ?? "");
+    const t = String(formData.get("t") ?? "");
+    if (!s || !verifyManageToken(s, t)) {
+      return { ok: false, error: "This preferences link isn't valid." };
+    }
+    const firstName = String(formData.get("firstName") ?? "").trim().slice(0, 80) || null;
+    const wantsBlog = formData.get("wantsBlog") === "on";
+    const wantsEvents = formData.get("wantsEvents") === "on";
+    const ok = await saveListPreferences(s, { wantsBlog, wantsEvents, firstName });
+    if (!ok) return { ok: false, error: "We couldn't update that subscription." };
+    return { ok: true, message: "Preferences saved." };
   });
 }
