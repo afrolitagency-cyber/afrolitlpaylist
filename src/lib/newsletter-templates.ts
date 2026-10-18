@@ -1,5 +1,4 @@
-import { MERGE, esc, plainTextFromHtml } from "@/lib/newsletter-html";
-import { siteUrl } from "@/lib/newsletter-tokens";
+import { MERGE, esc, plainTextFromHtml, siteUrl } from "@/lib/newsletter-html";
 
 export type CampaignContent = {
   featuredId?: string;

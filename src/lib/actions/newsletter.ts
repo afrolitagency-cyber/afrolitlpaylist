@@ -6,7 +6,8 @@ import type { CampaignKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRoleFresh, can } from "@/lib/rbac";
 import { sendCampaignEmail } from "@/lib/services/email";
-import { applyMerge, applyMergeText, archiveSlugFromSubject, campaignHtml, plainTextFromHtml } from "@/lib/newsletter-html";
+import { archiveSlugFromSubject, campaignHtml, plainTextFromHtml } from "@/lib/newsletter-html";
+import { applyMerge, applyMergeText } from "@/lib/newsletter-tokens";
 import { freezeCampaignHtml, type CampaignContent } from "@/lib/newsletter-render";
 import { runAction, type ActionState } from "./_result";
 

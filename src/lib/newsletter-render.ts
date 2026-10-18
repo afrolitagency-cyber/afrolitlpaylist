@@ -2,8 +2,7 @@ import type { CampaignKind, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { eventSelect, naira, toCard } from "@/lib/events";
 import { getIdentity } from "@/lib/settings";
-import { siteUrl } from "@/lib/newsletter-tokens";
-import { plainTextFromHtml } from "@/lib/newsletter-html";
+import { plainTextFromHtml, siteUrl } from "@/lib/newsletter-html";
 import {
   parseContent,
   renderBlogDigest,

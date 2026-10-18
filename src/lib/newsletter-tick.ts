@@ -2,8 +2,8 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import type { CampaignKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { applyMerge, applyMergeText, campaignHtml } from "@/lib/newsletter-html";
-import { manageToken, unsubscribePostUrl, type NewsletterList } from "@/lib/newsletter-tokens";
+import { campaignHtml } from "@/lib/newsletter-html";
+import { applyMerge, applyMergeText, manageToken, unsubscribePostUrl, type NewsletterList } from "@/lib/newsletter-tokens";
 import { sendCampaignBatch, sendCampaignEmail } from "@/lib/services/email";
 
 const ENQUEUE_PAGE = 200;

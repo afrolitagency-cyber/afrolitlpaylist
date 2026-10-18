@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { applyMerge } from "@/lib/newsletter-html";
+import { applyMerge } from "@/lib/newsletter-tokens";
 import { freezeCampaignHtml, suggestBlogContent, suggestEventsContent } from "@/lib/newsletter-render";
 
 export const dynamic = "force-dynamic";

@@ -1,12 +1,11 @@
 import crypto from "node:crypto";
+import { MERGE, esc, siteUrl } from "@/lib/newsletter-html";
+
+export { siteUrl };
 
 const CONFIRM_TTL_MS = 48 * 60 * 60 * 1000;
 
 export type NewsletterList = "blog" | "events" | "all";
-
-export function siteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.afrolitplaylist.com").replace(/\/$/, "");
-}
 
 export function hashToken(raw: string) {
   return crypto.createHash("sha256").update(raw).digest("hex");
@@ -66,4 +65,51 @@ export function unsubscribePostUrl(subscriberId: string, list: NewsletterList = 
 export function parseList(raw: string | null | undefined): NewsletterList {
   if (raw === "blog" || raw === "events") return raw;
   return "all";
+}
+
+function greetingName(firstName: string | null | undefined) {
+  const n = firstName?.trim();
+  return n ? esc(n) : "there";
+}
+
+export function applyMerge(
+  html: string,
+  opts: {
+    firstName?: string | null;
+    subscriberId: string;
+    list?: NewsletterList;
+  },
+) {
+  const manage = manageUrl(opts.subscriberId);
+  const unsub = unsubscribeUrl(opts.subscriberId, opts.list ?? "all");
+  const first = greetingName(opts.firstName);
+  let out = html
+    .replaceAll(MERGE.firstName, first)
+    .replaceAll(MERGE.manageUrl, manage)
+    .replaceAll(MERGE.unsubUrl, unsub);
+  if (!html.includes(MERGE.unsubUrl)) {
+    out += `<p style="margin-top:28px;font-size:12px;color:#777;text-align:center">
+      <a href="${unsub}" style="color:#777">Unsubscribe</a>
+      &nbsp;·&nbsp;
+      <a href="${manage}" style="color:#777">Email preferences</a>
+    </p>`;
+  }
+  return out;
+}
+
+export function applyMergeText(
+  text: string,
+  opts: { firstName?: string | null; subscriberId: string; list?: NewsletterList },
+) {
+  const manage = manageUrl(opts.subscriberId);
+  const unsub = unsubscribeUrl(opts.subscriberId, opts.list ?? "all");
+  const first = opts.firstName?.trim() || "there";
+  let out = text
+    .replaceAll(MERGE.firstName, first)
+    .replaceAll(MERGE.manageUrl, manage)
+    .replaceAll(MERGE.unsubUrl, unsub);
+  if (!text.includes(MERGE.unsubUrl)) {
+    out += `\n\nUnsubscribe: ${unsub}\nPreferences: ${manage}`;
+  }
+  return out;
 }
