@@ -101,7 +101,7 @@ export function RegisterForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-full bg-(--primary) py-3.5 text-[13.5px] font-semibold text-black disabled:opacity-60"
+        className="w-full rounded-full bg-(--primary) py-3.5 text-[13.5px] font-semibold text-white disabled:opacity-60"
       >
         {pending ? "Sending…" : waitlist ? "Join waitlist" : "Register now"}
       </button>

@@ -179,7 +179,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               {checkoutReady ? (
                 <Link
                   href={`/events/${event.slug}/checkout`}
-                  className="mt-5 block w-full rounded-full bg-(--primary) py-3.5 text-center text-[13.5px] font-semibold text-black"
+                  className="mt-5 block w-full rounded-full bg-(--primary) py-3.5 text-center text-[13.5px] font-semibold text-white"
                 >
                   Get tickets
                 </Link>
@@ -188,7 +188,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                   href={event.registrationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-5 block w-full rounded-full bg-(--primary) py-3.5 text-center text-[13.5px] font-semibold text-black"
+                  className="mt-5 block w-full rounded-full bg-(--primary) py-3.5 text-center text-[13.5px] font-semibold text-white"
                 >
                   Get tickets
                 </a>

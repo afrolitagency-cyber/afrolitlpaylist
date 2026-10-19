@@ -132,14 +132,14 @@ export function EventsSlider({
                 {isDetail ? (
                   <a
                     href="#attend"
-                    className="inline-flex items-center gap-2 rounded-full bg-(--primary) px-[26px] py-[13px] text-[13.5px] font-semibold text-black transition hover:scale-[1.04]"
+                    className="inline-flex items-center gap-2 rounded-full bg-(--primary) px-[26px] py-[13px] text-[13.5px] font-semibold text-white transition hover:scale-[1.04]"
                   >
                     {e.ctaLabel}
                   </a>
                 ) : (
                   <Link
                     href={`/events/${e.slug}`}
-                    className="inline-flex items-center gap-2 rounded-full bg-(--primary) px-[26px] py-[13px] text-[13.5px] font-semibold text-black transition hover:scale-[1.04]"
+                    className="inline-flex items-center gap-2 rounded-full bg-(--primary) px-[26px] py-[13px] text-[13.5px] font-semibold text-white transition hover:scale-[1.04]"
                   >
                     {e.ctaLabel}
                   </Link>

@@ -55,7 +55,7 @@
 .bt b { font-size: 22px; }
 .cta {
   display: inline-flex; gap: 8px; align-items: center; justify-content: center;
-  background: var(--primary); color: #0a0a0c; border: 0; border-radius: 99px;
+  background: var(--primary); color: #fff; border: 0; border-radius: 99px;
   padding: 15px 32px; font-weight: 600; font-size: 14px; cursor: pointer; flex: 1; max-width: 340px;
 }
 .cta:disabled { background: #26262b; color: var(--sub-text); cursor: not-allowed; }
