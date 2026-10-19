@@ -22,7 +22,12 @@ export async function runAction(fn: () => Promise<ActionState>): Promise<ActionS
       };
     }
     if (err instanceof ZodError) {
-      return { ok: false, error: "Please check the highlighted fields.", fieldErrors: err.flatten().fieldErrors as Record<string, string[]> };
+      const first = err.issues[0]?.message;
+      return {
+        ok: false,
+        error: first ? `Could not send: ${first}` : "Please check the highlighted fields.",
+        fieldErrors: err.flatten().fieldErrors as Record<string, string[]>,
+      };
     }
     console.error("[action]", err);
     return { ok: false, error: "Something went wrong. Nothing was saved." };

@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { saveCampaign, sendCampaignNow, sendTestEmail } from "@/lib/actions/newsletter";
 import type { ActionState } from "@/lib/actions/_result";
+import { useActionToast } from "@/components/ui/Toast";
 import { renderBlogDigest, renderEventsDigest, type BlogItem, type EventItem } from "@/lib/newsletter-templates";
 import type { CampaignKind } from "@prisma/client";
 
@@ -57,18 +58,20 @@ export function CampaignComposer({
   const [limitAudience, setLimitAudience] = useState(values.audienceIds.length > 0);
   const [picked, setPicked] = useState<string[]>(values.audienceIds);
   const [q, setQ] = useState("");
-  const [busy, setBusy] = useState(false);
+  useActionToast(state);
+  useActionToast(testState);
+  useActionToast(nowState);
+  const working = pending || sendingNow;
   const justSent = Boolean(
     (state?.ok && (state.message?.startsWith("Sending now") || state.message?.startsWith("Send started")))
     || (nowState?.ok && (nowState.message?.startsWith("Send started") || nowState.message?.startsWith("Sending now"))),
   );
   const locked =
-    busy
-    || justSent
+    justSent
     || values.status === "SENDING"
     || values.status === "CANCELED"
     || (values.status === "SENT" && values.delivered > 0);
-  const retryable = !justSent && !busy && (values.status === "FAILED" || (values.status === "SENT" && values.delivered === 0));
+  const retryable = !justSent && (values.status === "FAILED" || (values.status === "SENT" && values.delivered === 0));
   const msg = state ?? testState ?? nowState;
   const audience = limitAudience
     ? picked.length
@@ -82,8 +85,6 @@ export function CampaignComposer({
     if (!values.id && state?.ok && state.id) {
       router.replace(`/admin/newsletter/${state.id}`);
     }
-    if (state && !state.ok) setBusy(false);
-    if (nowState && !nowState.ok) setBusy(false);
     if (state?.ok || nowState?.ok) router.refresh();
   }, [state, nowState, values.id, router]);
   const picks = kind === "EVENTS" ? events : posts;
@@ -121,20 +122,18 @@ export function CampaignComposer({
     setItemIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   }
 
-  const intentRef = useRef<HTMLInputElement>(null);
-  function pickIntent(intent: "draft" | "schedule" | "now") {
-    return () => {
-      if (intentRef.current) intentRef.current.value = intent;
-      if (intent === "now") setBusy(true);
-    };
+  function blockEnterSubmit(e: KeyboardEvent<HTMLFormElement>) {
+    if (e.key !== "Enter") return;
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === "TEXTAREA" || tag === "BUTTON") return;
+    e.preventDefault();
   }
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <form action={action} className="space-y-5">
+      <form action={action} onKeyDown={blockEnterSubmit} className="space-y-5">
         {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
         <input type="hidden" name="kind" value={kind} />
-        <input ref={intentRef} type="hidden" name="intent" defaultValue="" />
 
         {msg ? (
           <p role={msg.ok ? "status" : "alert"}
@@ -287,18 +286,25 @@ export function CampaignComposer({
             </div>
           ) : null}
 
+          {msg ? (
+            <p role={msg.ok ? "status" : "alert"}
+              className={`mb-3 rounded border p-3 text-sm ${msg.ok ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-(--primary)/40 bg-(--primary)/10 text-(--primary)"}`}>
+              {msg.ok ? msg.message : msg.error}
+            </p>
+          ) : null}
+
           <div className="grid gap-2 sm:grid-cols-3">
-            <button type="submit" disabled={pending || locked} onClick={pickIntent("draft")}
+            <button type="submit" name="intent" value="draft" disabled={working || locked}
               className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50">
               Save draft
             </button>
-            <button type="submit" disabled={pending || locked} onClick={pickIntent("schedule")}
+            <button type="submit" name="intent" value="schedule" disabled={working || locked}
               className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50">
               Schedule
             </button>
-            <button type="submit" disabled={pending || locked} onClick={pickIntent("now")}
+            <button type="submit" name="intent" value="now" disabled={working || locked}
               className="rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-50">
-              {pending ? "Working…" : "Send now"}
+              {pending ? "Sending…" : "Send now"}
             </button>
           </div>
           <p className="mt-2 text-xs text-(--sub-text)">
@@ -320,7 +326,7 @@ export function CampaignComposer({
           {values.id && !locked && (["DRAFT", "SCHEDULED", "SENDING"].includes(values.status) || retryable) ? (
             <form action={sendNow} className="mt-4">
               <input type="hidden" name="id" value={values.id} />
-              <button type="submit" disabled={sendingNow || busy} onClick={() => setBusy(true)}
+              <button type="submit" disabled={sendingNow}
                 className="w-full rounded border border-(--border-strong) py-2.5 text-sm font-bold disabled:opacity-60">
                 {sendingNow ? "Starting…" : values.status === "SENDING" ? "Continue sending" : retryable ? "Retry send now" : "Send this campaign now"}
               </button>

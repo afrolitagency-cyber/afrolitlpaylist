@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div aria-live="polite" aria-atomic="false"
         className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 p-4 sm:items-end">
         {toasts.map((t) => (
-          <div key={t.id} role="status"
+          <div key={t.id} role={t.tone === "error" ? "alert" : "status"}
             className={`pointer-events-auto w-full max-w-sm rounded-lg border p-3.5 text-sm shadow-lg ${TONE[t.tone]}`}>
             {t.title ? <b className="mb-0.5 block text-[14.5px] text-inherit">{t.title}</b> : null}
             {t.message}
@@ -58,7 +58,7 @@ export function useActionToast(state: { ok: boolean; message?: string; error?: s
   const { push } = useToast();
   useEffect(() => {
     if (!state) return;
-    if (state.ok && state.message) push(state.message, "success");
-    if (!state.ok && state.error) push(state.error, "error");
+    if (state.ok && state.message) push(state.message, "success", "Done");
+    if (!state.ok && state.error) push(state.error, "error", "Not saved");
   }, [state, push]);
 }
