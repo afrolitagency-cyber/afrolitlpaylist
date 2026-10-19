@@ -9,6 +9,13 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const FROM = process.env.RESEND_FROM ?? "AfroLitPlaylist <hello@afrolitplaylist.com>";
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.afrolitplaylist.com";
 
+/** Display name + address from RESEND_FROM. Campaigns must use a domain verified on Resend. */
+export function defaultFrom() {
+  const m = FROM.match(/^(.*?)\s*<([^>]+)>$/);
+  if (m) return { name: m[1]!.trim() || "AfroLitPlaylist", email: m[2]!.trim() };
+  return { name: "AfroLitPlaylist", email: FROM.trim() };
+}
+
 type Mail = {
   to: string;
   subject: string;

@@ -343,6 +343,8 @@ async function finishIfDone(campaignId: string) {
   });
   await prisma.campaign.update({
     where: { id: campaignId },
-    data: { status: "SENT", sentAt: new Date(), recipients: sent },
+    data: sent > 0
+      ? { status: "SENT", sentAt: new Date(), recipients: sent }
+      : { status: "FAILED", recipients: 0 },
   });
 }

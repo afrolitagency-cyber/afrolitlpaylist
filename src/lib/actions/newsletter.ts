@@ -114,8 +114,17 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
     const existing = id
       ? await prisma.campaign.findUnique({ where: { id }, select: { status: true, archiveSlug: true } })
       : null;
-    if (existing && ["SENDING", "SENT", "CANCELED"].includes(existing.status)) {
-      return { ok: false, error: "This campaign has already been sent and can't be edited." };
+    if (existing && existing.status === "SENDING") {
+      return { ok: false, error: "This send is in progress. Wait, or use Continue sending." };
+    }
+    if (existing && existing.status === "CANCELED") {
+      return { ok: false, error: "This campaign was canceled." };
+    }
+    if (existing && existing.status === "SENT") {
+      const delivered = await deliveredCount(id!);
+      if (delivered > 0) {
+        return { ok: false, error: "This campaign already reached inboxes and can't be edited. Duplicate it for a new send." };
+      }
     }
 
     const archiveSlug = existing?.archiveSlug ?? archiveSlugFromSubject(rest.subject);
@@ -145,6 +154,10 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
       enqueueDone: false,
       lastSubscriberId: null,
     };
+
+    if (id && existing && ["FAILED", "SENT"].includes(existing.status)) {
+      await prisma.campaignDelivery.deleteMany({ where: { campaignId: id } });
+    }
 
     const saved = id
       ? await prisma.campaign.update({ where: { id }, data: payload })
@@ -184,17 +197,22 @@ export async function sendCampaignNow(_prev: ActionState, formData: FormData): P
 
     const camp = await prisma.campaign.findUnique({ where: { id } });
     if (!camp) return { ok: false, error: "Campaign not found." };
-    if (camp.status === "SENT" || camp.status === "CANCELED") {
-      return { ok: false, error: "This campaign has already finished." };
+    if (camp.status === "CANCELED") {
+      return { ok: false, error: "This campaign was canceled." };
     }
-    if (camp.status === "FAILED") {
-      return { ok: false, error: "This campaign failed. Save it again as a draft first." };
+    const delivered = await deliveredCount(id);
+    if (camp.status === "SENT" && delivered > 0) {
+      return { ok: false, error: "This campaign already reached inboxes. Duplicate it for a new send." };
     }
     if (!campaignHtml(camp.body, camp.html)) {
       return { ok: false, error: "This campaign has no HTML to send. Save it first." };
     }
 
-    if (camp.status === "DRAFT" || camp.status === "SCHEDULED") {
+    if (camp.status === "FAILED" || (camp.status === "SENT" && delivered === 0)) {
+      await prisma.campaignDelivery.deleteMany({ where: { campaignId: id } });
+    }
+
+    if (camp.status !== "SENDING") {
       await prisma.campaign.update({
         where: { id },
         data: {
@@ -252,6 +270,10 @@ export async function sendTestEmail(_prev: ActionState, formData: FormData): Pro
       ? { ok: true, message: `Test sent to ${actor.email}. Preference links in tests are placeholders.` }
       : { ok: false, error: "Email isn't configured, so nothing was sent." };
   });
+}
+
+async function deliveredCount(campaignId: string) {
+  return prisma.campaignDelivery.count({ where: { campaignId, status: "SENT" } });
 }
 
 export type { CampaignContent };

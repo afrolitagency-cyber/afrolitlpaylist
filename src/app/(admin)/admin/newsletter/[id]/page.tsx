@@ -6,6 +6,7 @@ import { CampaignComposer, type CampaignValues } from "@/components/admin/Campai
 import { eventSelect } from "@/lib/events";
 import { mapEvent, mapPost, parseContent, suggestBlogContent } from "@/lib/newsletter-render";
 import { formatLagosInput } from "@/lib/newsletter-time";
+import { defaultFrom } from "@/lib/services/email";
 import type { CampaignKind } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   const user = await requireRole(...can.sendCampaigns);
   const isNew = id === "new";
 
-  const [campaign, recipients, blogCount, eventCount, postRows, eventRows, people] = await Promise.all([
+  const [campaign, recipients, blogCount, eventCount, postRows, eventRows, people, delivered] = await Promise.all([
     isNew ? null : prisma.campaign.findUnique({ where: { id } }),
     prisma.newsletterSubscriber.count({ where: { status: "CONFIRMED" } }),
     prisma.newsletterSubscriber.count({ where: { status: "CONFIRMED", wantsBlog: true } }),
@@ -42,9 +43,11 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
       take: 500,
       select: { id: true, email: true, firstName: true, tags: true },
     }),
+    isNew ? Promise.resolve(0) : prisma.campaignDelivery.count({ where: { campaignId: id, status: "SENT" } }),
   ]);
   if (!isNew && !campaign) notFound();
 
+  const from = defaultFrom();
   const kind: CampaignKind = campaign?.kind ?? "BLOG_DIGEST";
   const suggested = campaign ? parseContent(campaign.content) : await suggestBlogContent();
 
@@ -53,8 +56,8 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     kind,
     subject: campaign?.subject ?? "",
     previewText: campaign?.previewText ?? "",
-    fromName: campaign?.fromName ?? "",
-    fromEmail: campaign?.fromEmail ?? "",
+    fromName: campaign?.fromName ?? from.name,
+    fromEmail: campaign?.fromEmail ?? from.email,
     body: typeof campaign?.body === "string" ? campaign.body : "",
     audienceTag: campaign?.audienceTag ?? "",
     audienceIds: campaign?.audienceIds ?? [],
@@ -67,6 +70,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     featuredId: suggested.featuredId ?? "",
     itemIds: suggested.itemIds ?? [],
     archiveSlug: campaign?.archiveSlug,
+    delivered,
   };
 
   return (

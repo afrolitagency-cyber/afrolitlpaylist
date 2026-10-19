@@ -18,6 +18,7 @@ export type CampaignValues = {
   intro: string; heroTitle: string; kicker: string; issueLabel: string;
   featuredId: string; itemIds: string[]; audienceIds: string[];
   archiveSlug?: string | null;
+  delivered: number;
 };
 
 export type AudiencePerson = { id: string; email: string; firstName: string; tags: string[] };
@@ -56,7 +57,11 @@ export function CampaignComposer({
   const [limitAudience, setLimitAudience] = useState(values.audienceIds.length > 0);
   const [picked, setPicked] = useState<string[]>(values.audienceIds);
   const [q, setQ] = useState("");
-  const locked = ["SENDING", "SENT", "CANCELED"].includes(values.status);
+  const locked =
+    values.status === "SENDING"
+    || values.status === "CANCELED"
+    || (values.status === "SENT" && values.delivered > 0);
+  const retryable = values.status === "FAILED" || (values.status === "SENT" && values.delivered === 0);
   const msg = state ?? testState ?? nowState;
   const audience = limitAudience
     ? picked.length
@@ -119,9 +124,15 @@ export function CampaignComposer({
           </p>
         ) : null}
 
-        {locked ? (
+        {locked && values.status === "SENT" ? (
           <p className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-300">
-            This campaign has been sent. Sent campaigns can&apos;t be edited.
+            This campaign reached inboxes. Duplicate it if you need to send again.
+          </p>
+        ) : null}
+        {retryable ? (
+          <p className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-300">
+            This send did not go out ({values.status === "FAILED" ? "failed" : "marked sent with 0 deliveries"}).
+            Fix the From address if needed, then Send now or Schedule.
           </p>
         ) : null}
 
@@ -161,6 +172,7 @@ export function CampaignComposer({
             <div>
               <label className={label} htmlFor="fromEmail">From email</label>
               <input id="fromEmail" name="fromEmail" type="email" defaultValue={values.fromEmail} disabled={locked} className={field} />
+              <p className="mt-1 text-[11px] text-(--sub-text)">Must be a domain verified on Resend. Confirm emails already use that domain — a different From is why campaigns fail.</p>
             </div>
           </div>
         </div>
@@ -286,12 +298,12 @@ export function CampaignComposer({
               : kind === "BLOG_DIGEST" ? "confirmed · blog list" : kind === "EVENTS" ? "confirmed · events list" : "confirmed subscribers"}
           </p>
           <a href="/admin/newsletter/list" className="mt-2 inline-block text-xs underline">Manage list</a>
-          {values.id && ["DRAFT", "SCHEDULED", "SENDING"].includes(values.status) ? (
+          {values.id && (["DRAFT", "SCHEDULED", "SENDING"].includes(values.status) || retryable) ? (
             <form action={sendNow} className="mt-4">
               <input type="hidden" name="id" value={values.id} />
               <button type="submit" disabled={sendingNow}
                 className="w-full rounded border border-(--border-strong) py-2.5 text-sm font-bold disabled:opacity-60">
-                {sendingNow ? "Starting…" : values.status === "SENDING" ? "Continue sending" : "Send this campaign now"}
+                {sendingNow ? "Starting…" : values.status === "SENDING" ? "Continue sending" : retryable ? "Retry send now" : "Send this campaign now"}
               </button>
             </form>
           ) : null}

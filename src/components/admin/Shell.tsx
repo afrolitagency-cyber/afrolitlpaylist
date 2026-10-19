@@ -22,7 +22,9 @@ type IconName =
   | "categories"
   | "emails"
   | "users"
-  | "settings";
+  | "settings"
+  | "payments"
+  | "scan";
 
 type Item = { label: string; href: string; icon: IconName; roles?: Role[]; badge?: number };
 
@@ -34,6 +36,8 @@ const NAV: Item[] = [
   { label: "Artists", href: "/admin/artists", icon: "artists" },
   { label: "Albums", href: "/admin/albums", icon: "albums" },
   { label: "Events", href: "/admin/events", icon: "events" },
+  { label: "Ticket payments", href: "/admin/payments", icon: "payments", roles: ["ADMIN", "EDITOR"] },
+  { label: "Door scan", href: "/admin/scan", icon: "scan", roles: ["ADMIN", "EDITOR", "DOOR"] },
   { label: "Episodes", href: "/admin/episodes", icon: "episodes" },
   { label: "Gallery", href: "/admin/gallery", icon: "gallery" },
   { label: "Newsletter", href: "/admin/newsletter", icon: "newsletter", roles: ["ADMIN"] },
@@ -183,6 +187,20 @@ function NavIcon({ name }: { name: IconName }) {
           <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a3 3 0 0 1 0 5.74" />
         </svg>
       );
+    case "payments":
+      return (
+        <svg {...props}>
+          <rect x="2" y="5" width="20" height="14" rx="2" />
+          <path d="M2 10h20" />
+        </svg>
+      );
+    case "scan":
+      return (
+        <svg {...props}>
+          <path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3" />
+          <path d="M7 12h10" />
+        </svg>
+      );
     case "settings":
       return (
         <svg {...props}>
@@ -270,7 +288,10 @@ export function StatusPill({ status }: { status: string }) {
     SCHEDULED: "bg-amber-500/15 text-amber-300",
     SENDING: "bg-sky-500/15 text-sky-300",
     SENT: "bg-emerald-500/15 text-emerald-400",
+    PAID: "bg-emerald-500/15 text-emerald-400",
     FAILED: "bg-(--primary)/15 text-(--primary)",
+    REFUNDED: "bg-orange-500/15 text-orange-300",
+    EXPIRED: "bg-(--surface-alt) text-(--sub-text)",
     CANCELED: "bg-(--surface-alt) text-(--sub-text)",
   };
   return (
