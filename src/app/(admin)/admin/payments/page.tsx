@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, can } from "@/lib/rbac";
 import { AdminShell, StatusPill } from "@/components/admin/Shell";
 import { formatKobo } from "@/lib/money";
+import { ResendTicketButton } from "@/components/admin/ResendTicketButton";
 import type { OrderStatus, Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -161,6 +162,7 @@ export default async function PaymentsPage({
                   <Link href={`/events/${o.event.slug}/order/${o.reference}`} className="font-mono text-xs underline" target="_blank">
                     {o.reference}
                   </Link>
+                  {o.status === "PAID" ? <ResendTicketButton reference={o.reference} /> : null}
                 </td>
               </tr>
             ))}

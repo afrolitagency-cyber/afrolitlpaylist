@@ -33,7 +33,7 @@ const campaignSchema = z.object({
   audienceIds: z.array(z.string()).default([]),
   limitAudience: z.boolean().default(false),
   scheduledAt: z.string().optional().nullable(),
-  intent: z.enum(["draft", "schedule", "now"]).default("draft"),
+  intent: z.enum(["draft", "schedule", "now"]),
 });
 
 function contentFrom(data: z.infer<typeof campaignSchema>): CampaignContent {
@@ -71,6 +71,11 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
   return runAction(async () => {
     await requireRoleFresh(...can.sendCampaigns);
 
+    const intentRaw = String(formData.get("intent") ?? "");
+    if (intentRaw !== "draft" && intentRaw !== "schedule" && intentRaw !== "now") {
+      return { ok: false, error: "Click Save draft, Schedule, or Send now. Pressing Enter only saves a draft." };
+    }
+
     const data = campaignSchema.parse({
       id: formData.get("id") || undefined,
       kind: formData.get("kind") || "CUSTOM",
@@ -89,9 +94,7 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
       audienceIds: formData.getAll("audienceIds").map(String).filter(Boolean),
       limitAudience: formData.get("limitAudience") === "on",
       scheduledAt: String(formData.get("scheduledAt") ?? "") || null,
-      intent: (["draft", "schedule", "now"].includes(String(formData.get("intent")))
-        ? String(formData.get("intent"))
-        : "draft") as "draft" | "schedule" | "now",
+      intent: intentRaw,
     });
 
     if (data.kind !== "CUSTOM" && !data.featuredId) {

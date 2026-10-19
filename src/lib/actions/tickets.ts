@@ -158,3 +158,17 @@ export async function deleteTicketTier(_prev: ActionState, formData: FormData): 
     return { ok: true, message: "Tier removed." };
   });
 }
+
+export async function resendOrderTickets(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await requireRoleFresh(...can.manageContent);
+    const reference = String(formData.get("reference") ?? "").trim();
+    if (!reference) return { ok: false, error: "Missing order reference." };
+    const { resendTicketEmail } = await import("@/lib/orders");
+    const ok = await resendTicketEmail(reference);
+    revalidatePath("/admin/payments");
+    return ok
+      ? { ok: true, message: "Ticket email sent with the new QR URL." }
+      : { ok: false, error: "Could not send. Order must be paid and have tickets." };
+  });
+}

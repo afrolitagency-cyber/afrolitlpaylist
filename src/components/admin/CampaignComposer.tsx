@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveCampaign, sendCampaignNow, sendTestEmail } from "@/lib/actions/newsletter";
 import type { ActionState } from "@/lib/actions/_result";
@@ -111,11 +111,19 @@ export function CampaignComposer({
     setItemIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   }
 
+  const intentRef = useRef<HTMLInputElement>(null);
+  function pickIntent(intent: "draft" | "schedule" | "now") {
+    return () => {
+      if (intentRef.current) intentRef.current.value = intent;
+    };
+  }
+
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
       <form action={action} className="space-y-5">
         {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
         <input type="hidden" name="kind" value={kind} />
+        <input ref={intentRef} type="hidden" name="intent" defaultValue="" />
 
         {msg ? (
           <p role={msg.ok ? "status" : "alert"}
@@ -269,21 +277,21 @@ export function CampaignComposer({
           ) : null}
 
           <div className="grid gap-2 sm:grid-cols-3">
-            <button type="submit" name="intent" value="draft" disabled={pending || locked}
+            <button type="submit" disabled={pending || locked} onClick={pickIntent("draft")}
               className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50">
               Save draft
             </button>
-            <button type="submit" name="intent" value="schedule" disabled={pending || locked}
+            <button type="submit" disabled={pending || locked} onClick={pickIntent("schedule")}
               className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50">
               Schedule
             </button>
-            <button type="submit" name="intent" value="now" disabled={pending || locked}
+            <button type="submit" disabled={pending || locked} onClick={pickIntent("now")}
               className="rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-50">
               {pending ? "Working…" : "Send now"}
             </button>
           </div>
           <p className="mt-2 text-xs text-(--sub-text)">
-            Send now queues this campaign immediately. If the batch is large, cron-job.org finishes the rest. Schedule uses Africa/Lagos time.
+            Send now starts immediately. Schedule waits for cron-job.org (every 15–20 min), so a 2-minute time will not fire until the next cron. Pressing Enter in a field does not send.
           </p>
         </div>
       </form>

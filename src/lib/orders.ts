@@ -117,3 +117,30 @@ export async function fulfillPaidOrder(reference: string) {
 
   return { ok: true as const, order: paid };
 }
+
+export async function resendTicketEmail(reference: string) {
+  const full = await prisma.order.findUnique({
+    where: { reference },
+    include: {
+      event: {
+        select: {
+          slug: true, title: true, startsAt: true, doorsAt: true, timezone: true,
+          venue: true, city: true, address: true, coverImage: true, ageLimit: true,
+        },
+      },
+      items: { include: { tier: { select: { id: true, name: true, admitsCount: true } } } },
+      tickets: { orderBy: { createdAt: "asc" } },
+    },
+  });
+  if (!full || full.status !== "PAID" || !full.tickets.length) return false;
+  return sendTicketPurchaseEmail({
+    reference: full.reference,
+    buyerName: full.buyerName,
+    buyerEmail: full.buyerEmail,
+    totalKobo: full.totalKobo,
+    event: full.event,
+    items: full.items,
+    tickets: full.tickets,
+    itemsByTier: full.items.map((i) => i.tier),
+  });
+}
