@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogoMark } from "@/components/ui/Logo";
+import { Brand, LogoMark } from "@/components/ui/Logo";
 import { MobileNav } from "@/components/ui/MobileNav";
 import { DesktopNav } from "../shared";
 import type { HeaderProps } from "../types";
@@ -15,16 +15,8 @@ export default function Header({ nav, identity }: HeaderProps) {
           alt=""
           className="absolute inset-0 h-full w-full object-cover object-[center_28%]"
         />
-        <Link href="/" className="absolute inset-0 flex items-center justify-center gap-2 px-4 drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] sm:gap-3">
-          <span className="inline-flex [&_svg]:h-9 [&_svg]:w-9 sm:[&_svg]:h-11 sm:[&_svg]:w-11 lg:[&_svg]:h-[52px] lg:[&_svg]:w-[52px]">
-            <LogoMark size={52} />
-          </span>
-          <span className="flex min-w-0 flex-col">
-            <span className="text-[15px] font-black tracking-[.04em] text-white sm:text-[22px] lg:text-[30px]">
-              AFRO<em className="not-italic text-(--primary)">LIT</em><span className="font-normal">PLAYLIST</span>
-            </span>
-            <span className="text-[10px] text-white/80 sm:text-xs">{identity.tagline}</span>
-          </span>
+        <Link href="/" className="absolute inset-0 flex items-center justify-center px-4 text-[17px] text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] sm:text-[20px] lg:text-[22px]">
+          <Brand size={40} tagline={identity.tagline} />
         </Link>
       </div>
 

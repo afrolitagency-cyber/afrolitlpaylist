@@ -1,4 +1,4 @@
-import { MERGE, esc, plainTextFromHtml, siteUrl } from "@/lib/newsletter-html";
+import { MERGE, esc, plainTextFromHtml, siteUrl, brandLockupHtml } from "@/lib/newsletter-html";
 
 export type CampaignContent = {
   featuredId?: string;
@@ -125,17 +125,16 @@ function shell(opts: {
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all">${esc(opts.preheader)}&zwnj;&nbsp;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#070709"><tr><td align="center" style="padding:20px 0 40px">
 <table role="presentation" class="w" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px">
-<tr><td class="gut mut ff" align="center" style="padding:0 24px 16px">Can’t see this email? <a href="${esc(opts.browserUrl)}" style="color:#9a9aa2;text-decoration:underline">View in browser</a></td></tr>
-<tr><td class="gut" style="padding:0 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="fd" style="font-size:19px;font-weight:700;letter-spacing:-.02em;color:#f6f5f2"><a href="${esc(site)}" style="color:#f6f5f2">AfroLit Playlist</a></td><td align="right" class="mut ff">${esc(opts.issueLabel)}</td></tr></table></td></tr>
+<tr><td class="gut" style="padding:0 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>${brandLockupHtml({ href: site, color: "#f6f5f2", fontSize: 18 })}</td><td align="right" class="mut ff">${esc(opts.issueLabel)}</td></tr></table></td></tr>
 <tr><td height="28" style="font-size:0;line-height:0">&nbsp;</td></tr>
 ${opts.inner}
 <tr><td height="30" style="font-size:0;line-height:0">&nbsp;</td></tr>
-<tr><td class="gut ff" align="center" style="padding:0 24px"><div class="fd" style="font-size:16px;font-weight:700;color:#f6f5f2">AfroLit Playlist</div>
+<tr><td class="gut ff" align="center" style="padding:0 24px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">${brandLockupHtml({ href: site, color: "#f6f5f2", fontSize: 16 })}</table>
 <div class="mut" style="margin:6px 0 14px">${esc(opts.tagline)}</div>
 ${socialRow(opts.socials)}
 <div class="mut" style="font-size:12px;color:#8a8a92">${opts.footerNote}<br>
 <a href="${MERGE.unsubUrl}" style="color:#9a9aa2;text-decoration:underline">${esc(opts.unsubLabel)}</a>
- &nbsp;·&nbsp; <a href="${MERGE.manageUrl}" style="color:#9a9aa2;text-decoration:underline">Email preferences</a><br><br>AfroLit Playlist · Lagos, Nigeria</div></td></tr>
+ &nbsp;·&nbsp; <a href="${MERGE.manageUrl}" style="color:#9a9aa2;text-decoration:underline">Email preferences</a><br><br>AfroLitPlaylist · Lagos, Nigeria</div></td></tr>
 </table>
 </td></tr></table>
 </body>

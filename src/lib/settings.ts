@@ -46,6 +46,7 @@ export const getAlbumStyles = cache(async (): Promise<AlbumStyles> => {
 const FALLBACK_IDENTITY: SiteIdentity = {
   name: "AfroLit Playlist",
   tagline: "Afro music blog site",
+  logoUrl: "/brand/afrolit-logo.png",
   socials: {},
 };
 

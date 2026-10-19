@@ -262,7 +262,7 @@ export default async function OrderPage({
       <footer className={styles.foot}>
         Questions about this order? <a href="mailto:hello@afrolitplaylist.com">hello@afrolitplaylist.com</a>
         <br />
-        AfroLit Playlist · Lagos, Nigeria
+        AfroLitPlaylist · Lagos, Nigeria
       </footer>
     </div>
   );

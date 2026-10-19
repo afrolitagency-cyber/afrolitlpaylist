@@ -6,6 +6,7 @@ import { fulfillPaidOrder } from "@/lib/orders";
 import { formatKoboExact } from "@/lib/money";
 import { formatTime } from "@/lib/events";
 import { ReceiptPrint } from "@/components/public/order/ReceiptPrint";
+import { Brand } from "@/components/ui/Logo";
 import styles from "@/components/public/order/receipt.module.css";
 
 export const dynamic = "force-dynamic";
@@ -88,7 +89,7 @@ export default async function ReceiptPage({
       <div className={styles.sheet}>
         <header className={styles.head}>
           <div className={styles.brand}>
-            Afro<span>Lit</span>Playlist
+            <Brand size={40} />
             <small>AfroLitPlaylist · Lagos, Nigeria<br />hello@afrolitplaylist.com · afrolitplaylist.com</small>
           </div>
           <div className={styles.doc}>

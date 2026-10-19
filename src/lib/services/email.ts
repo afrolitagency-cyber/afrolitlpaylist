@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
+import { brandLockupHtml } from "@/lib/newsletter-html";
 
 /**
  * All outbound mail goes through here. Sends never throw into a caller: a
@@ -132,7 +133,7 @@ function layout(title: string, body: string, cta?: { href: string; label: string
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
     <table role="presentation" width="100%" style="max-width:520px;background:#161616;border-radius:12px;padding:32px">
       <tr><td>
-        <p style="margin:0 0 20px;font-size:13px;font-weight:800;letter-spacing:.14em;color:#E50914">AFROLITPLAYLIST</p>
+        <div style="margin:0 0 20px">${brandLockupHtml({ fontSize: 16 })}</div>
         <h1 style="margin:0 0 14px;font-size:22px">${title}</h1>
         <div style="font-size:15px;line-height:1.65;color:#b3b3b3">${body}</div>
         ${cta ? `<a href="${cta.href}" style="display:inline-block;margin-top:24px;background:#E50914;color:#fff;padding:13px 24px;border-radius:4px;font-weight:600;text-decoration:none">${cta.label}</a>` : ""}

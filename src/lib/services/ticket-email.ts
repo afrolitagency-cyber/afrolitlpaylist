@@ -2,6 +2,7 @@ import { formatKobo } from "@/lib/money";
 import { formatTime as formatEventTime } from "@/lib/events";
 import { ticketQrPng } from "@/lib/ticket-qr";
 import { sendRaw } from "@/lib/services/email";
+import { brandLockupHtml } from "@/lib/newsletter-html";
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? "https://www.afrolitplaylist.com").replace(/\/$/, "");
 
@@ -145,7 +146,7 @@ export async function sendTicketPurchaseEmail(order: TicketMailOrder): Promise<b
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#0d0d0d"
              style="width:600px;max-width:600px;background:#0d0d0d;border-radius:14px;overflow:hidden;">
         <tr><td align="center" style="padding:28px 24px 6px 24px;">
-          <div style="font:800 24px/1 Helvetica,Arial,sans-serif;color:#ffffff;letter-spacing:-.02em;">Afro<span style="color:#e50914;">Lit</span>Playlist</div>
+          ${brandLockupHtml({ fontSize: 20 })}
         </td></tr>
         <tr><td align="center" style="padding:16px 24px 2px 24px;">
           <div style="font:700 11px/1 Helvetica,Arial,sans-serif;color:#9a9a9a;letter-spacing:.16em;text-transform:uppercase;">You're going</div>

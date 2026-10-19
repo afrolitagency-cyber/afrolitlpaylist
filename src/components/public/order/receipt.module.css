@@ -38,8 +38,8 @@
 .brand {
   font: 800 20px/1 inherit;
   letter-spacing: -0.02em;
+  color: #16181d;
 }
-.brand span { color: #e50914; }
 .brand small {
   display: block;
   font: 400 12px/1.5 inherit;
