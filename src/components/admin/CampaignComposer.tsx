@@ -57,11 +57,18 @@ export function CampaignComposer({
   const [limitAudience, setLimitAudience] = useState(values.audienceIds.length > 0);
   const [picked, setPicked] = useState<string[]>(values.audienceIds);
   const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const justSent = Boolean(
+    (state?.ok && (state.message?.startsWith("Sending now") || state.message?.startsWith("Send started")))
+    || (nowState?.ok && (nowState.message?.startsWith("Send started") || nowState.message?.startsWith("Sending now"))),
+  );
   const locked =
-    values.status === "SENDING"
+    busy
+    || justSent
+    || values.status === "SENDING"
     || values.status === "CANCELED"
     || (values.status === "SENT" && values.delivered > 0);
-  const retryable = values.status === "FAILED" || (values.status === "SENT" && values.delivered === 0);
+  const retryable = !justSent && !busy && (values.status === "FAILED" || (values.status === "SENT" && values.delivered === 0));
   const msg = state ?? testState ?? nowState;
   const audience = limitAudience
     ? picked.length
@@ -75,7 +82,10 @@ export function CampaignComposer({
     if (!values.id && state?.ok && state.id) {
       router.replace(`/admin/newsletter/${state.id}`);
     }
-  }, [state, values.id, router]);
+    if (state && !state.ok) setBusy(false);
+    if (nowState && !nowState.ok) setBusy(false);
+    if (state?.ok || nowState?.ok) router.refresh();
+  }, [state, nowState, values.id, router]);
   const picks = kind === "EVENTS" ? events : posts;
 
   const previewHtml = useMemo(() => {
@@ -115,6 +125,7 @@ export function CampaignComposer({
   function pickIntent(intent: "draft" | "schedule" | "now") {
     return () => {
       if (intentRef.current) intentRef.current.value = intent;
+      if (intent === "now") setBusy(true);
     };
   }
 
@@ -306,10 +317,10 @@ export function CampaignComposer({
               : kind === "BLOG_DIGEST" ? "confirmed · blog list" : kind === "EVENTS" ? "confirmed · events list" : "confirmed subscribers"}
           </p>
           <a href="/admin/newsletter/list" className="mt-2 inline-block text-xs underline">Manage list</a>
-          {values.id && (["DRAFT", "SCHEDULED", "SENDING"].includes(values.status) || retryable) ? (
+          {values.id && !locked && (["DRAFT", "SCHEDULED", "SENDING"].includes(values.status) || retryable) ? (
             <form action={sendNow} className="mt-4">
               <input type="hidden" name="id" value={values.id} />
-              <button type="submit" disabled={sendingNow}
+              <button type="submit" disabled={sendingNow || busy} onClick={() => setBusy(true)}
                 className="w-full rounded border border-(--border-strong) py-2.5 text-sm font-bold disabled:opacity-60">
                 {sendingNow ? "Starting…" : values.status === "SENDING" ? "Continue sending" : retryable ? "Retry send now" : "Send this campaign now"}
               </button>

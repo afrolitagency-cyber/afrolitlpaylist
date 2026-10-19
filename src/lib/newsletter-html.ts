@@ -1,5 +1,11 @@
 export function siteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.afrolitplaylist.com").replace(/\/$/, "");
+  const env = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const usable = env && !/localhost|127\.0\.0\.1/i.test(env);
+  if (usable) return env;
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  if (vercel) return `https://${vercel.replace(/^https?:\/\//, "")}`.replace(/\/$/, "");
+  if (env) return env;
+  return "https://www.afrolitplaylist.com";
 }
 
 export const MERGE = {

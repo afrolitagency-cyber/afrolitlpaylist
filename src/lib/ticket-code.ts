@@ -1,8 +1,8 @@
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.afrolitplaylist.com").replace(/\/$/, "");
+import { siteUrl } from "@/lib/newsletter-html";
 
 /** Phone cameras only offer a link if the QR payload is a URL. */
 export function ticketPublicUrl(code: string) {
-  return `${SITE}/t/${encodeURIComponent(code)}`;
+  return `${siteUrl()}/t/${encodeURIComponent(code)}`;
 }
 
 /** Accept a pasted ALP- code or a scanned https://…/t/ALP-… URL. */
