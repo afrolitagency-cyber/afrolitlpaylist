@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { saveCampaign, sendCampaignNow, sendTestEmail } from "@/lib/actions/newsletter";
 import type { ActionState } from "@/lib/actions/_result";
@@ -122,6 +122,13 @@ export function CampaignComposer({
     setItemIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   }
 
+  const intentRef = useRef<HTMLInputElement>(null);
+  function armIntent(intent: "draft" | "schedule" | "now") {
+    return () => {
+      if (intentRef.current) intentRef.current.value = intent;
+    };
+  }
+
   function blockEnterSubmit(e: KeyboardEvent<HTMLFormElement>) {
     if (e.key !== "Enter") return;
     const tag = (e.target as HTMLElement).tagName;
@@ -134,6 +141,7 @@ export function CampaignComposer({
       <form action={action} onKeyDown={blockEnterSubmit} className="space-y-5">
         {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
         <input type="hidden" name="kind" value={kind} />
+        <input ref={intentRef} type="hidden" name="intent" defaultValue="" />
 
         {msg ? (
           <p role={msg.ok ? "status" : "alert"}
@@ -294,16 +302,16 @@ export function CampaignComposer({
           ) : null}
 
           <div className="grid gap-2 sm:grid-cols-3">
-            <button type="submit" name="intent" value="draft" disabled={working || locked}
-              className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50">
+            <button type="submit" disabled={locked} onPointerDown={armIntent("draft")} onClick={armIntent("draft")}
+              className={`rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50 ${working ? "pointer-events-none opacity-50" : ""}`}>
               Save draft
             </button>
-            <button type="submit" name="intent" value="schedule" disabled={working || locked}
-              className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50">
+            <button type="submit" disabled={locked} onPointerDown={armIntent("schedule")} onClick={armIntent("schedule")}
+              className={`rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50 ${working ? "pointer-events-none opacity-50" : ""}`}>
               Schedule
             </button>
-            <button type="submit" name="intent" value="now" disabled={working || locked}
-              className="rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={locked} onPointerDown={armIntent("now")} onClick={armIntent("now")}
+              className={`rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-50 ${working ? "pointer-events-none opacity-50" : ""}`}>
               {pending ? "Sending…" : "Send now"}
             </button>
           </div>

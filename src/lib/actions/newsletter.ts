@@ -71,7 +71,7 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
   return runAction(async () => {
     await requireRoleFresh(...can.sendCampaigns);
 
-    const intentRaw = String(formData.get("intent") ?? "");
+    const intentRaw = formData.getAll("intent").map(String).find((v) => v === "draft" || v === "schedule" || v === "now") ?? "";
     if (intentRaw !== "draft" && intentRaw !== "schedule" && intentRaw !== "now") {
       return { ok: false, error: "Click Save draft, Schedule, or Send now. Pressing Enter only saves a draft." };
     }
