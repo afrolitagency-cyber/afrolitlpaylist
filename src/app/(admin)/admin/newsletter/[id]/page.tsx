@@ -5,22 +5,17 @@ import { AdminShell } from "@/components/admin/Shell";
 import { CampaignComposer, type CampaignValues } from "@/components/admin/CampaignComposer";
 import { eventSelect } from "@/lib/events";
 import { mapEvent, mapPost, parseContent, suggestBlogContent } from "@/lib/newsletter-render";
+import { formatLagosInput } from "@/lib/newsletter-time";
 import type { CampaignKind } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
-
-function forInput(d: Date | null): string {
-  if (!d) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default async function CampaignPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireRole(...can.sendCampaigns);
   const isNew = id === "new";
 
-  const [campaign, recipients, blogCount, eventCount, postRows, eventRows] = await Promise.all([
+  const [campaign, recipients, blogCount, eventCount, postRows, eventRows, people] = await Promise.all([
     isNew ? null : prisma.campaign.findUnique({ where: { id } }),
     prisma.newsletterSubscriber.count({ where: { status: "CONFIRMED" } }),
     prisma.newsletterSubscriber.count({ where: { status: "CONFIRMED", wantsBlog: true } }),
@@ -41,6 +36,12 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
       take: 30,
       select: eventSelect,
     }),
+    prisma.newsletterSubscriber.findMany({
+      where: { status: "CONFIRMED" },
+      orderBy: { email: "asc" },
+      take: 500,
+      select: { id: true, email: true, firstName: true, tags: true },
+    }),
   ]);
   if (!isNew && !campaign) notFound();
 
@@ -56,7 +57,8 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
     fromEmail: campaign?.fromEmail ?? "",
     body: typeof campaign?.body === "string" ? campaign.body : "",
     audienceTag: campaign?.audienceTag ?? "",
-    scheduledAt: forInput(campaign?.scheduledAt ?? null),
+    audienceIds: campaign?.audienceIds ?? [],
+    scheduledAt: formatLagosInput(campaign?.scheduledAt ?? null),
     status: campaign?.status ?? "DRAFT",
     intro: suggested.intro ?? "",
     heroTitle: suggested.heroTitle ?? "",
@@ -77,6 +79,12 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
         eventCount={eventCount}
         posts={postRows.map(mapPost)}
         events={eventRows.map(mapEvent)}
+        people={people.map((p) => ({
+          id: p.id,
+          email: p.email,
+          firstName: p.firstName ?? "",
+          tags: p.tags,
+        }))}
       />
     </AdminShell>
   );

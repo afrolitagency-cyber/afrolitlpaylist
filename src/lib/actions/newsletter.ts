@@ -9,6 +9,8 @@ import { sendCampaignEmail } from "@/lib/services/email";
 import { archiveSlugFromSubject, campaignHtml, plainTextFromHtml } from "@/lib/newsletter-html";
 import { applyMerge, applyMergeText } from "@/lib/newsletter-tokens";
 import { freezeCampaignHtml, type CampaignContent } from "@/lib/newsletter-render";
+import { parseLagosInput } from "@/lib/newsletter-time";
+import { tickNewsletter } from "@/lib/newsletter-tick";
 import { runAction, type ActionState } from "./_result";
 
 const kinds = ["BLOG_DIGEST", "EVENTS", "CUSTOM"] as const;
@@ -28,8 +30,10 @@ const campaignSchema = z.object({
   featuredId: z.string().optional().nullable(),
   itemIds: z.array(z.string()).default([]),
   audienceTag: z.string().max(60).optional().nullable(),
-  scheduledAt: z.coerce.date().optional().nullable(),
-  schedule: z.boolean().default(false),
+  audienceIds: z.array(z.string()).default([]),
+  limitAudience: z.boolean().default(false),
+  scheduledAt: z.string().optional().nullable(),
+  intent: z.enum(["draft", "schedule", "now"]).default("draft"),
 });
 
 function contentFrom(data: z.infer<typeof campaignSchema>): CampaignContent {
@@ -73,7 +77,7 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
       subject: formData.get("subject"),
       previewText: formData.get("previewText") || null,
       fromName: formData.get("fromName") || null,
-      fromEmail: formData.get("fromEmail") || null,
+      fromEmail: String(formData.get("fromEmail") ?? "").trim() || null,
       body: formData.get("body") ?? "",
       intro: formData.get("intro") || null,
       heroTitle: formData.get("heroTitle") || null,
@@ -82,19 +86,30 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
       featuredId: formData.get("featuredId") || null,
       itemIds: formData.getAll("itemIds").map(String),
       audienceTag: formData.get("audienceTag") || null,
-      scheduledAt: formData.get("scheduledAt") || null,
-      schedule: formData.get("schedule") === "on",
+      audienceIds: formData.getAll("audienceIds").map(String).filter(Boolean),
+      limitAudience: formData.get("limitAudience") === "on",
+      scheduledAt: String(formData.get("scheduledAt") ?? "") || null,
+      intent: (["draft", "schedule", "now"].includes(String(formData.get("intent")))
+        ? String(formData.get("intent"))
+        : "draft") as "draft" | "schedule" | "now",
     });
 
-    if (data.schedule && !data.scheduledAt) {
-      return { ok: false, error: "Pick a send date, or save as a draft instead." };
-    }
     if (data.kind !== "CUSTOM" && !data.featuredId) {
       return { ok: false, error: "Pick a featured item for this email." };
     }
+    if (data.limitAudience && data.audienceIds.length === 0) {
+      return { ok: false, error: "Pick at least one subscriber, or send to the whole list." };
+    }
+
+    const scheduledAt = data.intent === "now"
+      ? new Date()
+      : parseLagosInput(data.scheduledAt);
+    if (data.intent === "schedule" && !scheduledAt) {
+      return { ok: false, error: "Pick a send date in Africa/Lagos time, or save as a draft." };
+    }
 
     const content = contentFrom(data);
-    const { id, schedule, ...rest } = data;
+    const { id, intent, limitAudience, ...rest } = data;
 
     const existing = id
       ? await prisma.campaign.findUnique({ where: { id }, select: { status: true, archiveSlug: true } })
@@ -111,6 +126,7 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
     });
     if (!frozen) return { ok: false, error: "Could not build that email. Check the featured item is published." };
 
+    const status = intent === "draft" ? ("DRAFT" as const) : ("SCHEDULED" as const);
     const payload = {
       kind: data.kind,
       subject: rest.subject,
@@ -122,9 +138,12 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
       html: frozen.html,
       text: frozen.text,
       archiveSlug,
-      audienceTag: rest.audienceTag,
-      scheduledAt: rest.scheduledAt,
-      status: schedule ? ("SCHEDULED" as const) : ("DRAFT" as const),
+      audienceTag: rest.audienceTag || null,
+      audienceIds: limitAudience ? rest.audienceIds : [],
+      scheduledAt,
+      status,
+      enqueueDone: false,
+      lastSubscriberId: null,
     };
 
     const saved = id
@@ -134,10 +153,67 @@ export async function saveCampaign(_prev: ActionState, formData: FormData): Prom
     revalidatePath("/admin/newsletter");
     revalidatePath(`/admin/newsletter/${saved.id}`);
     revalidatePath(`/newsletter/issue/${archiveSlug}`);
+
+    if (intent === "now") {
+      const tick = await tickNewsletter();
+      const extra = tick.reason
+        ? ` Cron could not start: ${tick.reason}.`
+        : tick.sent || tick.enqueued
+          ? ` Queued ${tick.enqueued}, sent ${tick.sent}${tick.hasMore ? " — cron will finish the rest." : "."}`
+          : tick.hasMore
+            ? " Cron will keep draining this send."
+            : " Nothing was queued — check the list has confirmed subscribers.";
+      return { ok: true, id: saved.id, message: `Sending now.${extra}` };
+    }
+
     return {
       ok: true,
       id: saved.id,
-      message: schedule ? "Scheduled — the cron will send it." : "Draft saved. HTML is frozen from the current picks.",
+      message: intent === "schedule"
+        ? "Scheduled in Africa/Lagos time. Cron-job.org will send it when due — or click Send now."
+        : "Draft saved. HTML is frozen from the current picks.",
+    };
+  });
+}
+
+export async function sendCampaignNow(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await requireRoleFresh(...can.sendCampaigns);
+    const id = String(formData.get("id") ?? "");
+    if (!id) return { ok: false, error: "Save the campaign first." };
+
+    const camp = await prisma.campaign.findUnique({ where: { id } });
+    if (!camp) return { ok: false, error: "Campaign not found." };
+    if (camp.status === "SENT" || camp.status === "CANCELED") {
+      return { ok: false, error: "This campaign has already finished." };
+    }
+    if (camp.status === "FAILED") {
+      return { ok: false, error: "This campaign failed. Save it again as a draft first." };
+    }
+    if (!campaignHtml(camp.body, camp.html)) {
+      return { ok: false, error: "This campaign has no HTML to send. Save it first." };
+    }
+
+    if (camp.status === "DRAFT" || camp.status === "SCHEDULED") {
+      await prisma.campaign.update({
+        where: { id },
+        data: {
+          status: "SCHEDULED",
+          scheduledAt: new Date(),
+          enqueueDone: false,
+          lastSubscriberId: null,
+        },
+      });
+    }
+
+    const tick = await tickNewsletter();
+    revalidatePath("/admin/newsletter");
+    revalidatePath(`/admin/newsletter/${id}`);
+    if (tick.reason) return { ok: false, error: tick.reason };
+    return {
+      ok: true,
+      id,
+      message: `Send started. Queued ${tick.enqueued}, sent ${tick.sent}${tick.hasMore ? " — cron will finish the rest." : "."}`,
     };
   });
 }

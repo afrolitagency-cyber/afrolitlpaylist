@@ -129,7 +129,7 @@ async function enqueueDue(until: number) {
 
   for (const camp of sending) {
     while (Date.now() < until - 1500) {
-      const n = await enqueuePage(camp.id, camp.kind, camp.audienceTag, camp.lastSubscriberId);
+      const n = await enqueuePage(camp.id);
       enqueued += n.created;
       if (n.done) break;
     }
@@ -137,26 +137,32 @@ async function enqueueDue(until: number) {
   return enqueued;
 }
 
-async function enqueuePage(
-  campaignId: string,
-  kind: CampaignKind,
-  audienceTag: string | null,
-  lastSubscriberId: string | null,
-) {
+async function enqueuePage(campaignId: string) {
   const camp = await prisma.campaign.findUnique({
     where: { id: campaignId },
-    select: { lastSubscriberId: true, enqueueDone: true, kind: true, audienceTag: true },
+    select: {
+      lastSubscriberId: true,
+      enqueueDone: true,
+      kind: true,
+      audienceTag: true,
+      audienceIds: true,
+    },
   });
   if (!camp || camp.enqueueDone) return { created: 0, done: true };
 
-  const after = camp.lastSubscriberId ?? lastSubscriberId;
+  const after = camp.lastSubscriberId;
+  const picked = camp.audienceIds.filter(Boolean);
+  const idFilter = {
+    ...(picked.length ? { in: picked } : {}),
+    ...(after ? { gt: after } : {}),
+  };
   const subs = await prisma.newsletterSubscriber.findMany({
     where: {
       status: "CONFIRMED",
-      ...(kind === "BLOG_DIGEST" ? { wantsBlog: true } : {}),
-      ...(kind === "EVENTS" ? { wantsEvents: true } : {}),
-      ...(audienceTag ? { tags: { has: audienceTag } } : {}),
-      ...(after ? { id: { gt: after } } : {}),
+      ...(Object.keys(idFilter).length ? { id: idFilter } : {}),
+      ...(!picked.length && camp.kind === "BLOG_DIGEST" ? { wantsBlog: true } : {}),
+      ...(!picked.length && camp.kind === "EVENTS" ? { wantsEvents: true } : {}),
+      ...(!picked.length && camp.audienceTag ? { tags: { has: camp.audienceTag } } : {}),
     },
     select: { id: true, email: true },
     orderBy: { id: "asc" },

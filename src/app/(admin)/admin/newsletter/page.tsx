@@ -17,7 +17,12 @@ export default async function NewsletterPage() {
 
   return (
     <AdminShell role={user.role} email={user.email} title="Newsletter" subtitle="Plan, schedule and review sends"
-      actions={<Link href="/admin/newsletter/new" className="rounded bg-(--primary) px-4 py-2 text-sm font-semibold text-white">+ New campaign</Link>}>
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/newsletter/list" className="rounded border border-(--border-strong) px-4 py-2 text-sm font-bold">Subscriber list</Link>
+          <Link href="/admin/newsletter/new" className="rounded bg-(--primary) px-4 py-2 text-sm font-semibold text-white">+ New campaign</Link>
+        </div>
+      }>
       <div className="mb-5 grid gap-4 sm:grid-cols-3">
         {[
           { label: "Confirmed", value: confirmed },

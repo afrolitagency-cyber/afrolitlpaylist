@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { updateMessage } from "@/lib/actions/inbox";
+import { addInboxToNewsletter, updateMessage } from "@/lib/actions/inbox";
 import type { ActionState } from "@/lib/actions/_result";
 
 export type Message = {
@@ -18,6 +18,7 @@ const TONE: Record<string, string> = {
 
 export function InboxView({ messages }: { messages: Message[] }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(updateMessage, null);
+  const [listState, addToList, adding] = useActionState<ActionState, FormData>(addInboxToNewsletter, null);
   const [open, setOpen] = useState<Message | null>(messages[0] ?? null);
 
   return (
@@ -65,11 +66,15 @@ export function InboxView({ messages }: { messages: Message[] }) {
               {open.body}
             </p>
 
-            {state ? (
-              <p className={`mt-4 text-sm ${state.ok ? "text-emerald-400" : "text-(--primary)"}`}>
-                {state.ok ? state.message : state.error}
-              </p>
-            ) : null}
+            {(() => {
+              const flash = listState ?? state;
+              if (!flash) return null;
+              return (
+                <p className={`mt-4 text-sm ${flash.ok ? "text-emerald-400" : "text-(--primary)"}`}>
+                  {flash.ok ? flash.message : flash.error}
+                </p>
+              );
+            })()}
 
             <form action={action} className="mt-5 flex flex-wrap items-end gap-3">
               <input type="hidden" name="id" value={open.id} />
@@ -94,6 +99,14 @@ export function InboxView({ messages }: { messages: Message[] }) {
                 className="rounded border border-(--border-strong) px-4 py-2.5 text-sm font-bold">
                 Reply by email
               </a>
+            </form>
+            <form action={addToList} className="mt-3">
+              <input type="hidden" name="email" value={open.email} />
+              <input type="hidden" name="name" value={open.name} />
+              <button type="submit" disabled={adding}
+                className="rounded border border-(--border-strong) px-4 py-2.5 text-sm font-bold disabled:opacity-60">
+                {adding ? "Adding…" : "Add to newsletter list"}
+              </button>
             </form>
           </>
         )}

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveCampaign, sendTestEmail } from "@/lib/actions/newsletter";
+import { saveCampaign, sendCampaignNow, sendTestEmail } from "@/lib/actions/newsletter";
 import type { ActionState } from "@/lib/actions/_result";
 import { renderBlogDigest, renderEventsDigest, type BlogItem, type EventItem } from "@/lib/newsletter-templates";
 import type { CampaignKind } from "@prisma/client";
@@ -16,9 +16,11 @@ export type CampaignValues = {
   subject: string; previewText: string; fromName: string; fromEmail: string;
   body: string; audienceTag: string; scheduledAt: string; status: string;
   intro: string; heroTitle: string; kicker: string; issueLabel: string;
-  featuredId: string; itemIds: string[];
+  featuredId: string; itemIds: string[]; audienceIds: string[];
   archiveSlug?: string | null;
 };
+
+export type AudiencePerson = { id: string; email: string; firstName: string; tags: string[] };
 
 export function CampaignComposer({
   values,
@@ -27,6 +29,7 @@ export function CampaignComposer({
   eventCount,
   posts,
   events,
+  people,
 }: {
   values: CampaignValues;
   recipients: number;
@@ -34,10 +37,12 @@ export function CampaignComposer({
   eventCount: number;
   posts: BlogItem[];
   events: EventItem[];
+  people: AudiencePerson[];
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState<ActionState, FormData>(saveCampaign, null);
   const [testState, test, testing] = useActionState<ActionState, FormData>(sendTestEmail, null);
+  const [nowState, sendNow, sendingNow] = useActionState<ActionState, FormData>(sendCampaignNow, null);
   const [kind, setKind] = useState<CampaignKind>(values.kind);
   const [body, setBody] = useState(values.body);
   const [subject, setSubject] = useState(values.subject);
@@ -48,9 +53,18 @@ export function CampaignComposer({
   const [issueLabel, setIssueLabel] = useState(values.issueLabel);
   const [featuredId, setFeaturedId] = useState(values.featuredId);
   const [itemIds, setItemIds] = useState<string[]>(values.itemIds);
+  const [limitAudience, setLimitAudience] = useState(values.audienceIds.length > 0);
+  const [picked, setPicked] = useState<string[]>(values.audienceIds);
+  const [q, setQ] = useState("");
   const locked = ["SENDING", "SENT", "CANCELED"].includes(values.status);
-  const msg = state ?? testState;
-  const audience = kind === "BLOG_DIGEST" ? blogCount : kind === "EVENTS" ? eventCount : recipients;
+  const msg = state ?? testState ?? nowState;
+  const audience = limitAudience
+    ? picked.length
+    : kind === "BLOG_DIGEST" ? blogCount : kind === "EVENTS" ? eventCount : recipients;
+  const filtered = people.filter((p) => {
+    const hay = `${p.email} ${p.firstName} ${p.tags.join(" ")}`.toLowerCase();
+    return hay.includes(q.toLowerCase());
+  });
 
   useEffect(() => {
     if (!values.id && state?.ok && state.id) {
@@ -207,29 +221,57 @@ export function CampaignComposer({
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <div className="mb-4 grid gap-4 sm:grid-cols-2">
-            {kind === "CUSTOM" ? (
-              <div>
-                <label className={label} htmlFor="audienceTag">Audience tag</label>
-                <input id="audienceTag" name="audienceTag" defaultValue={values.audienceTag}
-                  placeholder="Leave blank for everyone" disabled={locked} className={field} />
-              </div>
-            ) : null}
             <div>
-              <label className={label} htmlFor="scheduledAt">Send at</label>
+              <label className={label} htmlFor="audienceTag">Audience tag</label>
+              <input id="audienceTag" name="audienceTag" defaultValue={values.audienceTag}
+                placeholder="Leave blank for the whole list" disabled={locked} className={field} />
+            </div>
+            <div>
+              <label className={label} htmlFor="scheduledAt">Send at (Africa/Lagos)</label>
               <input id="scheduledAt" name="scheduledAt" type="datetime-local" defaultValue={values.scheduledAt}
                 disabled={locked} className={field} />
             </div>
           </div>
-          <label className="mb-4 flex items-center gap-2.5 text-sm">
-            <input type="checkbox" name="schedule" disabled={locked} className="size-4 accent-(--primary)" />
-            Schedule this send
+
+          <label className="mb-3 flex items-center gap-2.5 text-sm">
+            <input type="checkbox" name="limitAudience" checked={limitAudience}
+              onChange={(e) => setLimitAudience(e.target.checked)} disabled={locked} className="size-4 accent-(--primary)" />
+            Send only to selected people
           </label>
-          <button type="submit" disabled={pending || locked}
-            className="w-full rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-50">
-            {pending ? "Saving…" : "Save campaign"}
-          </button>
+          {limitAudience ? (
+            <div className="mb-4 rounded-lg border border-(--border) p-3">
+              {picked.map((id) => <input key={id} type="hidden" name="audienceIds" value={id} />)}
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search emails"
+                disabled={locked} className={`${field} mb-2`} />
+              <div className="max-h-48 space-y-1 overflow-y-auto">
+                {filtered.map((p) => (
+                  <label key={p.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input type="checkbox" checked={picked.includes(p.id)} disabled={locked}
+                      onChange={() => setPicked((cur) => cur.includes(p.id) ? cur.filter((x) => x !== p.id) : [...cur, p.id])} />
+                    <span className="min-w-0 truncate">{p.firstName ? `${p.firstName} · ` : ""}{p.email}</span>
+                  </label>
+                ))}
+                {!filtered.length ? <p className="text-xs text-(--sub-text)">No matches. Add people on the list page first.</p> : null}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <button type="submit" name="intent" value="draft" disabled={pending || locked}
+              className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50">
+              Save draft
+            </button>
+            <button type="submit" name="intent" value="schedule" disabled={pending || locked}
+              className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-50">
+              Schedule
+            </button>
+            <button type="submit" name="intent" value="now" disabled={pending || locked}
+              className="rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-50">
+              {pending ? "Working…" : "Send now"}
+            </button>
+          </div>
           <p className="mt-2 text-xs text-(--sub-text)">
-            Scheduling hands it to cron-job.org (every 15–20 min). Nothing sends from this page.
+            Send now queues this campaign immediately. If the batch is large, cron-job.org finishes the rest. Schedule uses Africa/Lagos time.
           </p>
         </div>
       </form>
@@ -239,8 +281,20 @@ export function CampaignComposer({
           <h3 className="mb-1 text-[15px] font-bold">Audience</h3>
           <p className="text-3xl font-black">{audience.toLocaleString()}</p>
           <p className="text-xs text-(--sub-text)">
-            {kind === "BLOG_DIGEST" ? "confirmed · blog list" : kind === "EVENTS" ? "confirmed · events list" : "confirmed subscribers"}
+            {limitAudience
+              ? "selected confirmed people"
+              : kind === "BLOG_DIGEST" ? "confirmed · blog list" : kind === "EVENTS" ? "confirmed · events list" : "confirmed subscribers"}
           </p>
+          <a href="/admin/newsletter/list" className="mt-2 inline-block text-xs underline">Manage list</a>
+          {values.id && ["DRAFT", "SCHEDULED", "SENDING"].includes(values.status) ? (
+            <form action={sendNow} className="mt-4">
+              <input type="hidden" name="id" value={values.id} />
+              <button type="submit" disabled={sendingNow}
+                className="w-full rounded border border-(--border-strong) py-2.5 text-sm font-bold disabled:opacity-60">
+                {sendingNow ? "Starting…" : values.status === "SENDING" ? "Continue sending" : "Send this campaign now"}
+              </button>
+            </form>
+          ) : null}
         </div>
 
         <form action={test} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">

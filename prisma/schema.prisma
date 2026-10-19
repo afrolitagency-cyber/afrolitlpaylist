@@ -636,6 +636,8 @@ model Campaign {
   text        String?        @db.Text
   archiveSlug String?        @unique
   audienceTag String?
+  /// When non-empty, only these subscriber ids are queued (still must be CONFIRMED).
+  audienceIds String[]       @default([])
   status      CampaignStatus @default(DRAFT)
   scheduledAt DateTime?
   sentAt      DateTime?
