@@ -5,15 +5,35 @@ import { inviteUser, updateUser } from "@/lib/actions/users";
 import type { ActionState } from "@/lib/actions/_result";
 
 export type UserRow = {
-  id: string; email: string; name: string; role: string; status: string; lastActive: string; isSelf: boolean;
+  id: string; email: string; name: string; role: string; status: string; lastActive: string; isSelf: boolean; artistAccess: boolean;
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  SUPERADMIN: "Superadmin",
+  ADMIN: "Admin",
+  EDITOR: "Editor",
+  ARTIST: "Artist",
+  DOOR: "Door",
 };
 
 const field = "rounded border border-(--border) bg-(--input-bg) p-2.5 text-sm";
 
-export function UsersTable({ users }: { users: UserRow[] }) {
+export function UsersTable({
+  users,
+  actorRole,
+  assignable,
+  canInviteArtists,
+}: {
+  users: UserRow[];
+  actorRole: string;
+  assignable: string[];
+  canInviteArtists: boolean;
+}) {
   const [inviteState, invite, inviting] = useActionState<ActionState, FormData>(inviteUser, null);
   const [updateState, update] = useActionState<ActionState, FormData>(updateUser, null);
   const msg = inviteState ?? updateState;
+  const inviteRoles = assignable.filter((role) => role !== "SUPERADMIN" && (role !== "ARTIST" || canInviteArtists));
+  const defaultInvite = inviteRoles.includes("EDITOR") ? "EDITOR" : inviteRoles[0];
 
   return (
     <div className="space-y-5">
@@ -31,11 +51,10 @@ export function UsersTable({ users }: { users: UserRow[] }) {
         </div>
         <div>
           <label htmlFor="role" className="mb-1.5 block text-xs font-bold">Role</label>
-          <select id="role" name="role" defaultValue="ARTIST" className={field}>
-            <option value="ARTIST">Artist</option>
-            <option value="EDITOR">Editor</option>
-            <option value="DOOR">Door</option>
-            <option value="ADMIN">Admin</option>
+          <select id="role" name="role" defaultValue={defaultInvite} className={field}>
+            {inviteRoles.map((role) => (
+              <option key={role} value={role}>{ROLE_LABEL[role] ?? role}</option>
+            ))}
           </select>
         </div>
         <button type="submit" disabled={inviting}
@@ -53,25 +72,36 @@ export function UsersTable({ users }: { users: UserRow[] }) {
             </div>
             <span className="text-xs text-(--sub-text)">{u.lastActive}</span>
 
-            {u.isSelf ? (
-              <span className="rounded-full bg-(--surface-alt) px-2.5 py-1 text-[11.5px] font-bold capitalize text-(--sub-text)">
-                {u.role.toLowerCase()} · you
+            {u.isSelf || !assignable.includes(u.role) ? (
+              <span className="rounded-full bg-(--surface-alt) px-2.5 py-1 text-[11.5px] font-bold text-(--sub-text)">
+                {ROLE_LABEL[u.role] ?? u.role}{u.isSelf ? " · you" : ""}
+                {u.role === "ADMIN" && u.artistAccess ? " · artists" : ""}
               </span>
             ) : (
               <form action={update} className="flex items-center gap-2">
                 <input type="hidden" name="id" value={u.id} />
                 <input type="hidden" name="action" value="role" />
                 <select name="role" defaultValue={u.role} className={field} aria-label={`Role for ${u.email}`}>
-                  <option value="ARTIST">Artist</option>
-                  <option value="EDITOR">Editor</option>
-                  <option value="DOOR">Door</option>
-                  <option value="ADMIN">Admin</option>
+                  {assignable.filter((role) => role !== "ARTIST" || canInviteArtists || u.role === "ARTIST").map((role) => (
+                    <option key={role} value={role}>{ROLE_LABEL[role] ?? role}</option>
+                  ))}
                 </select>
                 <button type="submit" className="rounded border border-(--border-strong) px-3 py-2 text-xs font-bold">Save</button>
               </form>
             )}
 
-            {!u.isSelf ? (
+            {actorRole === "SUPERADMIN" && u.role === "ADMIN" && !u.isSelf ? (
+              <form action={update}>
+                <input type="hidden" name="id" value={u.id} />
+                <input type="hidden" name="action" value="artistAccess" />
+                <input type="hidden" name="artistAccess" value={u.artistAccess ? "false" : "true"} />
+                <button type="submit" className="rounded border border-(--border-strong) px-3 py-2 text-xs font-bold">
+                  {u.artistAccess ? "Revoke artist access" : "Allow artist access"}
+                </button>
+              </form>
+            ) : null}
+
+            {!u.isSelf && (actorRole === "SUPERADMIN" || assignable.includes(u.role)) ? (
               <form action={update}>
                 <input type="hidden" name="id" value={u.id} />
                 <input type="hidden" name="action" value={u.status === "SUSPENDED" ? "activate" : "suspend"} />

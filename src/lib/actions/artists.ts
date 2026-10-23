@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireRoleFresh, requireOwnArtist, can } from "@/lib/rbac";
+import { requireArtistAccess, requireOwnArtist } from "@/lib/rbac";
 import { artistProfileInput, reviewDecisionInput } from "@/lib/validation";
 import { joinGenres } from "@/lib/genres";
 import { uniqueSlug } from "@/lib/services/slug";
@@ -44,7 +44,7 @@ export async function submitProfile(_prev: ActionState, formData: FormData): Pro
 /** Admin-side: approve, request changes (note required), or reject. */
 export async function decideReview(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    const actor = await requireRoleFresh(...can.reviewArtists); // ADMIN only, fresh
+    const actor = await requireArtistAccess();
 
     const input = reviewDecisionInput.parse({
       artistId: formData.get("artistId"),
@@ -85,14 +85,12 @@ export async function decideReview(_prev: ActionState, formData: FormData): Prom
   });
 }
 
-/** Admin or editor writes the profile directly. A draft stays off the public site. */
+/** Superadmin, or an admin they have authorized. A draft stays off the public site. */
 export async function saveArtist(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
     const id = String(formData.get("id") ?? "");
     const status = formData.get("status") === "LIVE" ? ("LIVE" as const) : ("DRAFT" as const);
-    const actor = status === "LIVE"
-      ? await requireRoleFresh(...can.manageContent)
-      : await requireRole(...can.manageContent);
+    const actor = await requireArtistAccess();
 
     const data = artistProfileInput.parse({
       name: formData.get("name"),
@@ -106,9 +104,6 @@ export async function saveArtist(_prev: ActionState, formData: FormData): Promis
 
     const claimEmail = String(formData.get("claimEmail") ?? "").trim().toLowerCase();
     if (claimEmail && !claimEmail.includes("@")) return { ok: false, error: "That email doesn't look right." };
-    if (claimEmail && actor.role !== "ADMIN") {
-      return { ok: false, error: "Only an admin can email an artist to claim a profile." };
-    }
 
     const fields = {
       name: data.name,
@@ -159,7 +154,7 @@ export async function saveArtist(_prev: ActionState, formData: FormData): Promis
 /** Safety valve: discography publishes without review, so admin can unpublish. */
 export async function setReleaseVisibility(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh(...can.manageContent);
+    await requireArtistAccess();
     const id = String(formData.get("releaseId") ?? "");
     const published = formData.get("published") === "true";
     const release = await prisma.discography.update({ where: { id }, data: { published } });

@@ -2,13 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireRoleFresh, can } from "@/lib/rbac";
+import { assignableRoles, requireArtistAccess, requireRoleFresh, can } from "@/lib/rbac";
 import { createInvite } from "@/lib/services/invite";
 import { sendArtistInvite } from "@/lib/services/email";
 import { runAction, type ActionState } from "./_result";
 
-const roleEnum = z.enum(["ADMIN", "EDITOR", "ARTIST", "DOOR"]);
+const roleEnum = z.enum(["SUPERADMIN", "ADMIN", "EDITOR", "ARTIST", "DOOR"]);
+
+function canAssign(actor: Role, role: Role) {
+  return assignableRoles(actor).includes(role);
+}
 
 export async function inviteUser(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
@@ -16,6 +21,8 @@ export async function inviteUser(_prev: ActionState, formData: FormData): Promis
     const email = String(formData.get("email") ?? "").toLowerCase().trim();
     const role = roleEnum.parse(formData.get("role"));
     if (!email.includes("@")) return { ok: false, error: "That email doesn't look right." };
+    if (!canAssign(actor.role, role)) return { ok: false, error: "You can't assign that role." };
+    if (role === "ARTIST") await requireArtistAccess();
 
     const token = await createInvite(email, undefined, actor.id);
     await prisma.invite.updateMany({ where: { email, acceptedAt: null }, data: { role } });
@@ -35,25 +42,49 @@ export async function updateUser(_prev: ActionState, formData: FormData): Promis
     const id = String(formData.get("id") ?? "");
     const action = String(formData.get("action") ?? "");
 
-    // An admin who demotes or suspends themselves locks everyone out of settings.
     if (id === actor.id) return { ok: false, error: "You can't change your own access here." };
 
-    if (action === "suspend" || action === "activate") {
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true, status: true },
+    });
+    if (!target) return { ok: false, error: "That account no longer exists." };
+    if (actor.role !== "SUPERADMIN" && (target.role === "SUPERADMIN" || target.role === "ADMIN")) {
+      return { ok: false, error: "Only a superadmin can change an admin." };
+    }
+
+    if (action === "artistAccess") {
+      if (actor.role !== "SUPERADMIN") {
+        return { ok: false, error: "Only a superadmin can authorize artist access." };
+      }
+      if (target.role !== "ADMIN") {
+        return { ok: false, error: "Artist access is granted to an admin." };
+      }
+      await prisma.user.update({
+        where: { id },
+        data: { artistAccess: formData.get("artistAccess") === "true" },
+      });
+    } else if (action === "suspend" || action === "activate") {
+      if (action === "suspend" && target.role === "SUPERADMIN" && target.status === "ACTIVE") {
+        const supers = await prisma.user.count({ where: { role: "SUPERADMIN", status: "ACTIVE" } });
+        if (supers <= 1) return { ok: false, error: "This is the last superadmin. Promote someone else first." };
+      }
       await prisma.user.update({
         where: { id },
         data: { status: action === "suspend" ? "SUSPENDED" : "ACTIVE" },
       });
     } else if (action === "role") {
       const role = roleEnum.parse(formData.get("role"));
-      // Never remove the last admin — the account that could restore access.
-      if (role !== "ADMIN") {
-        const admins = await prisma.user.count({ where: { role: "ADMIN", status: "ACTIVE" } });
-        const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
-        if (admins <= 1 && target?.role === "ADMIN") {
-          return { ok: false, error: "This is the last admin. Promote someone else first." };
-        }
+      if (!canAssign(actor.role, role)) return { ok: false, error: "You can't assign that role." };
+      if (role === "ARTIST") await requireArtistAccess();
+      if (target.role === "SUPERADMIN" && role !== "SUPERADMIN") {
+        const supers = await prisma.user.count({ where: { role: "SUPERADMIN", status: "ACTIVE" } });
+        if (supers <= 1) return { ok: false, error: "This is the last superadmin. Promote someone else first." };
       }
-      await prisma.user.update({ where: { id }, data: { role } });
+      await prisma.user.update({
+        where: { id },
+        data: { role, artistAccess: role === "ADMIN" ? undefined : false },
+      });
     } else {
       return { ok: false, error: "Unknown action." };
     }

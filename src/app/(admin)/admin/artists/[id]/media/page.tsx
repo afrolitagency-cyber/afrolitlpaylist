@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireArtistPage } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
 import { ArtistMediaEditor, type MomentItem, type StoryItem } from "@/components/admin/ArtistMediaEditor";
 import { inlineText, isBlockArray, type Block } from "@/lib/blocks";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ArtistMediaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireRole(...can.manageContent);
+  const user = await requireArtistPage();
 
   const artist = await prisma.artist.findUnique({
     where: { id },

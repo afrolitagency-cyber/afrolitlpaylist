@@ -3,11 +3,10 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireRoleFresh, requireOwnArtist, can } from "@/lib/rbac";
+import { requireArtistAccess, requireOwnArtist } from "@/lib/rbac";
 import { runAction, type ActionState } from "./_result";
 
-/** Moments and Stories are EDITOR-curated. Artists never reach these actions —
- *  that boundary is the whole point of keeping them out of the review blob. */
+/** Moments and stories are curated by a superadmin or an authorized admin. */
 
 const momentSchema = z.object({
   id: z.string().cuid().optional(),
@@ -19,7 +18,7 @@ const momentSchema = z.object({
 
 export async function saveMoment(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRole(...can.manageContent);
+    await requireArtistAccess();
     const data = momentSchema.parse({
       id: formData.get("id") || undefined,
       artistId: formData.get("artistId"),
@@ -40,7 +39,7 @@ export async function saveMoment(_prev: ActionState, formData: FormData): Promis
 
 export async function deleteMoment(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh(...can.manageContent);
+    await requireArtistAccess();
     const id = String(formData.get("id") ?? "");
     const moment = await prisma.moment.delete({ where: { id } });
     revalidateTag("artists");
@@ -60,7 +59,7 @@ const storySchema = z.object({
 
 export async function saveStory(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRole(...can.manageContent);
+    await requireArtistAccess();
     const data = storySchema.parse({
       id: formData.get("id") || undefined,
       artistId: formData.get("artistId"),
@@ -94,7 +93,7 @@ export async function saveStory(_prev: ActionState, formData: FormData): Promise
 
 export async function deleteStory(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh(...can.manageContent);
+    await requireArtistAccess();
     const id = String(formData.get("id") ?? "");
     const story = await prisma.artistStory.delete({ where: { id } });
     revalidateTag("artists");

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireArtistPage } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
 import { ArtistForm, type ArtistFormValues } from "@/components/admin/ArtistForm";
 import type { PendingProfile } from "@/lib/services/review";
@@ -22,7 +22,7 @@ const BLANK: ArtistFormValues = {
 
 export default async function ArtistEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireRole(...can.manageContent);
+  const user = await requireArtistPage();
   const isNew = id === "new";
 
   const artist = isNew

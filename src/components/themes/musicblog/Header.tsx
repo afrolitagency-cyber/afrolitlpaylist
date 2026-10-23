@@ -12,7 +12,7 @@ export default function Header({ nav }: HeaderProps) {
           <LogoMark size={40} />
           <span className="text-[18px] font-black">
             AFRO<em className="not-italic text-(--primary)">LIT</em>
-            <span className="font-normal">PLAYLIST</span>
+            PLAYLIST
           </span>
         </Link>
         <DesktopNav nav={nav} className="gap-6"

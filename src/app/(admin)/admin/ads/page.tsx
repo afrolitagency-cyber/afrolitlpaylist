@@ -1,4 +1,4 @@
-import { requireRoleFresh } from "@/lib/rbac";
+import { requireRoleFresh, can } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
 import { AdSlotForm } from "@/components/admin/AdSlotForm";
 import { AdCreativeForm } from "@/components/admin/AdCreativeForm";
@@ -8,7 +8,7 @@ import { AD_PLACEMENTS, AD_PLACEMENT_COPY, adsArePublic, getAdminAdSlots, type A
 export const dynamic = "force-dynamic";
 
 export default async function AdminAds() {
-  const user = await requireRoleFresh("ADMIN");
+  const user = await requireRoleFresh(...can.manageSettings);
   const [slots, visible] = await Promise.all([getAdminAdSlots(), adsArePublic()]);
   const byPlacement = new Map<AdSlotWithCreatives["placement"], AdSlotWithCreatives>(
     slots.map((s) => [s.placement, s]),

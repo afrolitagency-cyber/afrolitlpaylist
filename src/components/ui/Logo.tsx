@@ -23,7 +23,7 @@ export function Wordmark({ full = true, className = "" }: { full?: boolean; clas
   return (
     <span className={`whitespace-nowrap font-black tracking-tight ${className}`}>
       AFRO<em className="not-italic text-(--primary)">LIT</em>
-      {full ? <span className="font-normal">PLAYLIST</span> : null}
+      {full ? "PLAYLIST" : null}
     </span>
   );
 }

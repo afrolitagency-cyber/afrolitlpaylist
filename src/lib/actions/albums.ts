@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireRoleFresh, can } from "@/lib/rbac";
+import { requireArtistAccess } from "@/lib/rbac";
 import { albumInput } from "@/lib/validation";
 import { uniqueSlug } from "@/lib/services/slug";
 import { PLATFORMS } from "@/lib/album-platforms";
@@ -29,8 +29,7 @@ export async function saveAlbum(_prev: ActionState, formData: FormData): Promise
   const result = await runAction(async () => {
     const id = String(formData.get("id") ?? "");
     const published = formData.get("published") === "true";
-    if (published) await requireRoleFresh(...can.manageContent);
-    else await requireRole(...can.manageContent);
+    await requireArtistAccess();
 
     const links: Record<string, string> = {};
     for (const p of PLATFORMS) {
@@ -85,7 +84,7 @@ export async function saveAlbum(_prev: ActionState, formData: FormData): Promise
 /** Each homepage template keeps its own Trending Albums layout. */
 export async function saveAlbumStyles(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh(...can.manageSettings);
+    await requireArtistAccess();
     const value: Record<string, AlbumStyle> = {};
     for (const theme of THEME_KEYS) {
       const style = String(formData.get(`style_${theme}`) ?? "");
@@ -107,7 +106,7 @@ export async function saveAlbumStyles(_prev: ActionState, formData: FormData): P
 
 export async function deleteAlbum(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const result = await runAction(async () => {
-    await requireRoleFresh(...can.manageContent);
+    await requireArtistAccess();
     const id = String(formData.get("id") ?? "");
     const album = await prisma.album.delete({ where: { id }, select: { slug: true } });
     revalidateAlbums(album.slug);

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireArtistPage } from "@/lib/rbac";
 import { AdminShell, StatusPill } from "@/components/admin/Shell";
 import { ReviewForm } from "@/components/admin/ReviewForm";
 import { buildDiff, type PendingProfile } from "@/lib/services/review";
@@ -15,7 +15,7 @@ function render(value: unknown) {
 
 export default async function ReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireRole(...can.reviewArtists);
+  const user = await requireArtistPage();
 
   const artist = await prisma.artist.findUnique({
     where: { id },

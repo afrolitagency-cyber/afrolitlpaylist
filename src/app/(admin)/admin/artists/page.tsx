@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireArtistPage } from "@/lib/rbac";
 import { AdminShell, StatusPill } from "@/components/admin/Shell";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { ArtistStatus } from "@prisma/client";
@@ -11,7 +11,7 @@ const TABS = ["ALL", "PENDING", "CHANGES_REQUESTED", "LIVE", "DRAFT"] as const;
 
 export default async function AdminArtists({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const { status } = await searchParams;
-  const user = await requireRole(...can.manageContent);
+  const user = await requireArtistPage();
   const active = (TABS as readonly string[]).includes(status ?? "") ? (status as string) : "ALL";
 
   const [artists, counts] = await Promise.all([

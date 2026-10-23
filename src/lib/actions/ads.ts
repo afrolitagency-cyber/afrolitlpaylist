@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { AdFillMode, AdPlacement } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireRoleFresh } from "@/lib/rbac";
+import { requireRoleFresh, can } from "@/lib/rbac";
 import { AD_PLACEMENTS } from "@/lib/ads";
 import { SETTING_KEYS } from "@/lib/settings";
 import { runAction, type ActionState } from "./_result";
@@ -31,7 +31,7 @@ function revalidateAds() {
 
 export async function setAdsPublic(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh("ADMIN");
+    await requireRoleFresh(...can.manageSettings);
     const visible = formData.get("visible") === "on";
     await prisma.siteSetting.upsert({
       where: { key: SETTING_KEYS.adsPublic },
@@ -45,7 +45,7 @@ export async function setAdsPublic(_prev: ActionState, formData: FormData): Prom
 
 export async function saveAdSlot(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh("ADMIN");
+    await requireRoleFresh(...can.manageSettings);
     const placement = String(formData.get("placement") ?? "") as AdPlacement;
     if (!AD_PLACEMENTS.includes(placement)) return { ok: false, error: "Unknown placement." };
 
@@ -93,7 +93,7 @@ const creativeInput = z.object({
 
 export async function saveAdCreative(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh("ADMIN");
+    await requireRoleFresh(...can.manageSettings);
     const data = creativeInput.parse({
       id: formData.get("id") || undefined,
       slotId: formData.get("slotId"),
@@ -139,7 +139,7 @@ export async function saveAdCreative(_prev: ActionState, formData: FormData): Pr
 
 export async function deleteAdCreative(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh("ADMIN");
+    await requireRoleFresh(...can.manageSettings);
     const id = String(formData.get("id") ?? "");
     if (!id) return { ok: false, error: "Missing creative." };
     await prisma.adCreative.delete({ where: { id } });

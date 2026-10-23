@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireArtistPage } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
 import { AlbumForm, type AlbumFormValues } from "@/components/admin/AlbumForm";
 import { readLinks } from "@/lib/album-platforms";
@@ -15,7 +15,7 @@ export default async function AlbumEditor({
   searchParams: Promise<{ created?: string }>;
 }) {
   const [{ id }, { created }] = await Promise.all([params, searchParams]);
-  const user = await requireRole(...can.manageContent);
+  const user = await requireArtistPage();
   const isNew = id === "new";
 
   const [album, artists, nextRank] = await Promise.all([

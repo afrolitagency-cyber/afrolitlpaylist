@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
@@ -50,10 +51,42 @@ export async function requireRoleFresh(...allowed: Role[]): Promise<SessionUser>
   return { id: fresh.id, email: fresh.email, role: fresh.role };
 }
 
+/**
+ * Create, invite, and register artists. Superadmin always. An admin only after
+ * the superadmin has set artistAccess. Editors never.
+ */
+export async function requireArtistAccess(): Promise<SessionUser> {
+  const user = await requireRoleFresh("SUPERADMIN", "ADMIN");
+  if (user.role === "SUPERADMIN") return user;
+  const row = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { artistAccess: true },
+  });
+  if (!row?.artistAccess) throw new AuthError("FORBIDDEN");
+  return user;
+}
+
+/** Page gate. A missing grant returns to the dashboard instead of a 500. */
+export async function requireArtistPage(): Promise<SessionUser> {
+  try {
+    return await requireArtistAccess();
+  } catch (err) {
+    if (err instanceof AuthError) redirect(err.code === "UNAUTHENTICATED" ? "/admin/login" : "/admin");
+    throw err;
+  }
+}
+
 /** Artists may only touch their own rows. Ownership is checked, never assumed. */
 export async function requireOwnArtist(artistId: string): Promise<SessionUser> {
   const user = await requireSession();
-  if (user.role === "ADMIN" || user.role === "EDITOR") return user;
+  if (user.role === "SUPERADMIN") return user;
+  if (user.role === "ADMIN") {
+    const fresh = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { artistAccess: true, status: true },
+    });
+    if (fresh?.status === "ACTIVE" && fresh.artistAccess) return user;
+  }
   const artist = await prisma.artist.findUnique({
     where: { id: artistId },
     select: { userId: true },
@@ -62,13 +95,18 @@ export async function requireOwnArtist(artistId: string): Promise<SessionUser> {
   return user;
 }
 
+export function assignableRoles(actor: Role): Role[] {
+  if (actor === "SUPERADMIN") return ["SUPERADMIN", "ADMIN", "EDITOR", "ARTIST", "DOOR"];
+  if (actor === "ADMIN") return ["EDITOR", "ARTIST", "DOOR"];
+  return [];
+}
+
 export const can = {
-  manageContent: ["ADMIN", "EDITOR"] as Role[],
-  moderate: ["ADMIN", "EDITOR"] as Role[],
-  reviewArtists: ["ADMIN"] as Role[],
-  sendCampaigns: ["ADMIN"] as Role[],
-  manageUsers: ["ADMIN"] as Role[],
-  manageSettings: ["ADMIN"] as Role[],
+  manageContent: ["SUPERADMIN", "ADMIN", "EDITOR"] as Role[],
+  moderate: ["SUPERADMIN", "ADMIN", "EDITOR"] as Role[],
+  sendCampaigns: ["SUPERADMIN", "ADMIN"] as Role[],
+  manageUsers: ["SUPERADMIN", "ADMIN"] as Role[],
+  manageSettings: ["SUPERADMIN", "ADMIN"] as Role[],
   /** Scanner-only. Must never be added to manageContent. */
-  scanDoor: ["ADMIN", "EDITOR", "DOOR"] as Role[],
+  scanDoor: ["SUPERADMIN", "ADMIN", "EDITOR", "DOOR"] as Role[],
 };

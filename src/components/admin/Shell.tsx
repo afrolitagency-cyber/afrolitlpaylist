@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Route } from "next";
+import type { Role } from "@prisma/client";
 import { LogoMark } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import type { Role } from "@prisma/client";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 type IconName =
   | "overview"
@@ -26,29 +28,29 @@ type IconName =
   | "payments"
   | "scan";
 
-type Item = { label: string; href: string; icon: IconName; roles?: Role[]; badge?: number };
+type Item = { label: string; href: string; icon: IconName; roles?: Role[]; artist?: boolean; badge?: number };
 
 const NAV: Item[] = [
   { label: "Overview", href: "/admin", icon: "overview" },
-  { label: "Artist submissions", href: "/admin/artists?status=PENDING", icon: "submissions", roles: ["ADMIN"] },
+  { label: "Artist submissions", href: "/admin/artists?status=PENDING", icon: "submissions", artist: true },
   { label: "Comments", href: "/admin/comments", icon: "comments" },
   { label: "Posts", href: "/admin/posts", icon: "posts" },
-  { label: "Artists", href: "/admin/artists", icon: "artists" },
-  { label: "Albums", href: "/admin/albums", icon: "albums" },
+  { label: "Artists", href: "/admin/artists", icon: "artists", artist: true },
+  { label: "Albums", href: "/admin/albums", icon: "albums", artist: true },
   { label: "Events", href: "/admin/events", icon: "events" },
-  { label: "Ticket payments", href: "/admin/payments", icon: "payments", roles: ["ADMIN", "EDITOR"] },
-  { label: "Door scan", href: "/admin/scan", icon: "scan", roles: ["ADMIN", "EDITOR", "DOOR"] },
+  { label: "Ticket payments", href: "/admin/payments", icon: "payments", roles: ["SUPERADMIN", "ADMIN", "EDITOR"] },
+  { label: "Door scan", href: "/admin/scan", icon: "scan", roles: ["SUPERADMIN", "ADMIN", "EDITOR", "DOOR"] },
   { label: "Episodes", href: "/admin/episodes", icon: "episodes" },
   { label: "Gallery", href: "/admin/gallery", icon: "gallery" },
-  { label: "Newsletter", href: "/admin/newsletter", icon: "newsletter", roles: ["ADMIN"] },
+  { label: "Newsletter", href: "/admin/newsletter", icon: "newsletter", roles: ["SUPERADMIN", "ADMIN"] },
   { label: "Contact inbox", href: "/admin/inbox", icon: "inbox" },
   { label: "Analytics", href: "/admin/analytics", icon: "analytics" },
   { label: "Media library", href: "/admin/media", icon: "media" },
-  { label: "Ads", href: "/admin/ads", icon: "ads", roles: ["ADMIN"] },
+  { label: "Ads", href: "/admin/ads", icon: "ads", roles: ["SUPERADMIN", "ADMIN"] },
   { label: "Categories", href: "/admin/taxonomy", icon: "categories" },
-  { label: "Email templates", href: "/admin/emails", icon: "emails", roles: ["ADMIN"] },
-  { label: "Users", href: "/admin/users", icon: "users", roles: ["ADMIN"] },
-  { label: "Settings", href: "/admin/settings", icon: "settings", roles: ["ADMIN"] },
+  { label: "Email templates", href: "/admin/emails", icon: "emails", roles: ["SUPERADMIN", "ADMIN"] },
+  { label: "Users", href: "/admin/users", icon: "users", roles: ["SUPERADMIN", "ADMIN"] },
+  { label: "Settings", href: "/admin/settings", icon: "settings", roles: ["SUPERADMIN", "ADMIN"] },
 ];
 
 function NavIcon({ name }: { name: IconName }) {
@@ -212,9 +214,10 @@ function NavIcon({ name }: { name: IconName }) {
 }
 
 /** The sidebar hides what the role cannot use — but hiding is cosmetic only.
- *  Enforcement lives in requireRole(); the menu is never the gate. */
-export function AdminShell({
-  role,
+ *  Enforcement lives in requireRole(); the menu is never the gate.
+ *  The role is read from the database so a promotion shows up before the JWT refreshes. */
+export async function AdminShell({
+  role: roleProp,
   email,
   title,
   subtitle,
@@ -228,7 +231,24 @@ export function AdminShell({
   actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const visible = NAV.filter((i) => !i.roles || i.roles.includes(role));
+  const session = await auth();
+  let role = roleProp;
+  let artistAccess = roleProp === "SUPERADMIN";
+  if (session?.user?.id) {
+    const fresh = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, artistAccess: true, status: true },
+    });
+    if (fresh && fresh.status === "ACTIVE") {
+      role = fresh.role;
+      artistAccess = fresh.role === "SUPERADMIN" || (fresh.role === "ADMIN" && fresh.artistAccess);
+    }
+  }
+  const visible = NAV.filter((i) => {
+    if (i.artist && !artistAccess) return false;
+    if (i.roles && !i.roles.includes(role)) return false;
+    return true;
+  });
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[248px_1fr]">
@@ -239,7 +259,9 @@ export function AdminShell({
             <b className="block text-[15px] font-black">
               AFRO<em className="not-italic text-(--primary)">LIT</em>PLAYLIST
             </b>
-            <span className="text-[10.5px] font-semibold tracking-wider text-(--sub-text)">ADMIN CMS</span>
+            <span className="text-[10.5px] font-semibold tracking-wider text-(--sub-text)">
+              {role === "SUPERADMIN" ? "SUPERADMIN" : "ADMIN CMS"}
+            </span>
           </div>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-2.5">

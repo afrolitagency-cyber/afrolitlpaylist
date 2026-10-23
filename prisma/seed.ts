@@ -43,11 +43,11 @@ async function main() {
     create: {
       email,
       name: "AfroLit Admin",
-      role: "ADMIN",
+      role: "SUPERADMIN",
       status: "ACTIVE",
       passwordHash: await bcrypt.hash(password, 12),
     },
-    update: {},
+    update: { role: "SUPERADMIN" },
   });
 
   // ---- categories

@@ -8,6 +8,11 @@ export const dynamic = "force-dynamic"; // admin is never cached
 
 export default async function AdminDashboard() {
   const user = await requireRole(...can.manageContent);
+  const fresh = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true, artistAccess: true },
+  });
+  const artistAccess = fresh?.role === "SUPERADMIN" || (fresh?.role === "ADMIN" && Boolean(fresh.artistAccess));
 
   const [pendingArtists, pendingComments, drafts, submissions] = await Promise.all([
     prisma.artist.count({ where: { status: "PENDING" } }),
@@ -22,7 +27,9 @@ export default async function AdminDashboard() {
   ]);
 
   const queues = [
-    { label: "Artist submissions", count: pendingArtists, href: "/admin/artists?status=PENDING", hint: "Awaiting review" },
+    ...(artistAccess
+      ? [{ label: "Artist submissions", count: pendingArtists, href: "/admin/artists?status=PENDING", hint: "Awaiting review" }]
+      : []),
     { label: "Comments", count: pendingComments, href: "/admin/comments", hint: "Need moderation" },
     { label: "Unshipped drafts", count: drafts, href: "/admin/posts?status=DRAFT", hint: "Stalled in draft" },
   ];
@@ -53,28 +60,32 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <h2 className="mb-4 text-lg font-bold">Artist submissions</h2>
-      <div className="overflow-hidden rounded-xl border border-(--border-strong) bg-(--card-bg)">
-        {submissions.length === 0 ? (
-          <p className="p-6 text-sm text-(--sub-text)">Nothing waiting. The queue is clear.</p>
-        ) : (
-          submissions.map((a: { id: string; name: string; genre: string | null; status: string; submittedAt: Date | null }) => (
-            <div key={a.id} className="flex items-center gap-4 border-b border-(--border-strong) px-5 py-4 last:border-0">
-              <div className="min-w-0 flex-1">
-                <b className="block text-sm">{a.name}</b>
-                <span className="text-xs text-(--sub-text)">{a.genre ?? "—"}</span>
-              </div>
-              <StatusPill status={a.status} />
-              <span className="hidden text-xs text-(--sub-text) sm:block">
-                {a.submittedAt ? a.submittedAt.toLocaleDateString("en-GB") : "—"}
-              </span>
-              <Link href={`/admin/artists/${a.id}/review`} className="rounded border border-(--border-strong) px-3 py-1.5 text-xs font-bold hover:border-(--primary)">
-                Review
-              </Link>
-            </div>
-          ))
-        )}
-      </div>
+      {artistAccess ? (
+        <>
+          <h2 className="mb-4 text-lg font-bold">Artist submissions</h2>
+          <div className="overflow-hidden rounded-xl border border-(--border-strong) bg-(--card-bg)">
+            {submissions.length === 0 ? (
+              <p className="p-6 text-sm text-(--sub-text)">Nothing waiting. The queue is clear.</p>
+            ) : (
+              submissions.map((a: { id: string; name: string; genre: string | null; status: string; submittedAt: Date | null }) => (
+                <div key={a.id} className="flex items-center gap-4 border-b border-(--border-strong) px-5 py-4 last:border-0">
+                  <div className="min-w-0 flex-1">
+                    <b className="block text-sm">{a.name}</b>
+                    <span className="text-xs text-(--sub-text)">{a.genre ?? "—"}</span>
+                  </div>
+                  <StatusPill status={a.status} />
+                  <span className="hidden text-xs text-(--sub-text) sm:block">
+                    {a.submittedAt ? a.submittedAt.toLocaleDateString("en-GB") : "—"}
+                  </span>
+                  <Link href={`/admin/artists/${a.id}/review`} className="rounded border border-(--border-strong) px-3 py-1.5 text-xs font-bold hover:border-(--primary)">
+                    Review
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      ) : null}
     </AdminShell>
   );
 }

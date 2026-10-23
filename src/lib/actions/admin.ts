@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireRoleFresh, can } from "@/lib/rbac";
+import { requireRole, requireRoleFresh, requireArtistAccess, can } from "@/lib/rbac";
 import { THEME_KEYS } from "@/components/themes/registry";
 import { SETTING_KEYS } from "@/lib/settings";
 import { normalizeEmbedUrl } from "@/lib/embedUrl";
@@ -123,7 +123,7 @@ export async function saveEmbed(_prev: ActionState, formData: FormData): Promise
 
 export async function inviteArtist(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    const actor = await requireRoleFresh(...can.manageUsers);
+    const actor = await requireArtistAccess();
     const email = String(formData.get("email") ?? "").toLowerCase().trim();
     const artistId = String(formData.get("artistId") ?? "") || undefined;
     if (!email.includes("@")) return { ok: false, error: "That email doesn't look right." };

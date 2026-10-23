@@ -20,6 +20,7 @@ enum Role {
   EDITOR
   ARTIST
   DOOR
+  SUPERADMIN
 }
 
 enum UserStatus {
@@ -34,6 +35,8 @@ model User {
   name         String?
   passwordHash String?
   role         Role       @default(ARTIST)
+  /// Superadmin turns this on before an admin can create, invite, or register an artist.
+  artistAccess Boolean    @default(false)
   status       UserStatus @default(INVITED)
   lastActiveAt DateTime?
 

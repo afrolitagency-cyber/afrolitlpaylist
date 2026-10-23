@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireArtistPage } from "@/lib/rbac";
 import { AdminShell, StatusPill } from "@/components/admin/Shell";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PLATFORMS, platformLabel } from "@/lib/album-platforms";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 /** The editorial chart plus outbound "Listen on" clicks from the last 30 days. */
 export default async function AdminAlbums() {
-  const user = await requireRole(...can.manageContent);
+  const user = await requireArtistPage();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [albums, clickRows, albumStyles, activeTheme] = await Promise.all([
