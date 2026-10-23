@@ -109,6 +109,7 @@ export function PostForm({
           <div className="mb-4">
             <label className={label} htmlFor="publishedAt">Publish date</label>
             <input id="publishedAt" name="publishedAt" type="datetime-local" defaultValue={values.publishedAt} className={field} />
+            <p className="mt-1.5 text-[11px] text-(--sub-text)">Leave blank and we stamp the exact time you click Publish.</p>
           </div>
           <button type="submit" disabled={pending}
             className="w-full rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-60">

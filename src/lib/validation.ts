@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+/** Empty datetime-local must not become 1970 via coerce.date(null). */
+export const optionalDate = z.preprocess((v) => {
+  if (v == null || v === "") return null;
+  const d = v instanceof Date ? v : new Date(String(v));
+  return Number.isNaN(d.getTime()) ? null : d;
+}, z.date().nullable());
+
+export function stampPublishedAt(status: string, value: Date | null | undefined): Date | null {
+  if (status === "PUBLISHED") return value ?? new Date();
+  return value ?? null;
+}
+
 export const slug = z
   .string()
   .min(1)
@@ -16,7 +28,7 @@ export const postInput = z.object({
   artistId: z.string().cuid().optional().nullable(),
   tags: z.array(z.string().max(40)).max(12).default([]),
   status: z.enum(["DRAFT", "PENDING", "SCHEDULED", "PUBLISHED", "ARCHIVED"]),
-  publishedAt: z.coerce.date().optional().nullable(),
+  publishedAt: optionalDate,
   featured: z.boolean().default(false),
   commentsOn: z.boolean().default(true),
 });

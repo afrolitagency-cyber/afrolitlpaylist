@@ -93,6 +93,7 @@ export function EpisodeForm({ values }: { values: EpisodeValues }) {
           <div className="mb-4">
             <label className={label} htmlFor="publishedAt">Publish date</label>
             <input id="publishedAt" name="publishedAt" type="datetime-local" defaultValue={values.publishedAt} className={field} />
+            <p className="mt-1.5 text-[11px] text-(--sub-text)">Leave blank and we stamp the exact time you click Publish.</p>
           </div>
           <label className="flex items-center justify-between py-2.5 text-sm">
             <span>Featured episode</span>

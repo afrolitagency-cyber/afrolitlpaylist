@@ -49,7 +49,7 @@ export default async function ScanPage({
 
   return (
     <AdminShell role={user.role} email={user.email} title="Door scan"
-      subtitle="Atomic check-in. Three failure reasons. Lookup when the phone is dead.">
+      subtitle="Atomic check-in. Three failure reasons. Lookup when the phone is dead. Scan-rate chart and offline queue are not built yet.">
       {!events.length ? (
         <p className="text-sm text-(--sub-text)">No ticketed published events yet.</p>
       ) : (

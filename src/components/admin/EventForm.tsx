@@ -168,6 +168,7 @@ export function EventForm({
           <div>
             <label className={label} htmlFor="settlementNote">Settlement note</label>
             <textarea id="settlementNote" name="settlementNote" rows={3} defaultValue={values.settlementNote} className={field} />
+            <p className="mt-1.5 text-xs text-(--sub-text)">Record the agreed split here. The payout screen (gross, fees, refunds, host cut) waits on live Paystack keys.</p>
           </div>
         </div>
       </div>

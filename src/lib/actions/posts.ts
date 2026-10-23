@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole, requireRoleFresh, can } from "@/lib/rbac";
-import { postInput } from "@/lib/validation";
+import { postInput, stampPublishedAt } from "@/lib/validation";
 import { slugify, uniqueSlug } from "@/lib/services/slug";
 import { runAction, type ActionState } from "./_result";
 import type { Prisma } from "@prisma/client";
@@ -54,7 +54,7 @@ export async function savePost(_prev: ActionState, formData: FormData): Promise<
       status: data.status,
       featured: data.featured,
       commentsOn: data.commentsOn,
-      publishedAt: publishing ? (data.publishedAt ?? new Date()) : data.publishedAt,
+      publishedAt: stampPublishedAt(data.status, data.publishedAt),
     };
 
     const post = id

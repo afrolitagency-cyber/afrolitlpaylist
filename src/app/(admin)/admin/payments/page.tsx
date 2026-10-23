@@ -78,8 +78,19 @@ export default async function PaymentsPage({
 
   return (
     <AdminShell role={user.role} email={user.email} title="Ticket payments"
-      subtitle="Paystack orders for AfroLit events"
+      subtitle="Paystack orders for AfroLit events. Refunds and settlement wait on the live account and live key."
       actions={<a href={exportHref} className="rounded border border-(--border-strong) px-4 py-2 text-sm font-bold">Export CSV</a>}>
+      <div className="mb-5 rounded-xl border border-(--border-strong) bg-(--surface-alt) p-5 text-sm">
+        <p className="font-bold">Paused until live Paystack keys</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-(--sub-text)">
+          <li>Refunds (Paystack refund + void tickets + restock)</li>
+          <li>Issue complimentary tickets from admin</li>
+          <li>Settlement summary and mark paid-out</li>
+          <li>Release expired checkout holds (cron)</li>
+          <li>Public /refunds policy page</li>
+          <li>Door: scan-rate chart and optional offline queue</li>
+        </ul>
+      </div>
       <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Paid", value: `${paid._count} · ${formatKobo(paid._sum.totalKobo ?? 0)}` },

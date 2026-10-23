@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole, requireRoleFresh, can } from "@/lib/rbac";
 import { uniqueSlug } from "@/lib/services/slug";
+import { optionalDate, stampPublishedAt } from "@/lib/validation";
 import { runAction, type ActionState } from "./_result";
 
 const episodeSchema = z.object({
@@ -21,7 +22,7 @@ const episodeSchema = z.object({
   appleUrl: z.string().url().optional().or(z.literal("")).nullable(),
   youtubeUrl: z.string().url().optional().or(z.literal("")).nullable(),
   status: z.enum(["DRAFT", "SCHEDULED", "PUBLISHED", "ARCHIVED"]),
-  publishedAt: z.coerce.date().optional().nullable(),
+  publishedAt: optionalDate,
   featured: z.boolean().default(false),
   commentsOn: z.boolean().default(true),
 });
@@ -58,7 +59,7 @@ export async function saveEpisode(_prev: ActionState, formData: FormData): Promi
     const payload = {
       ...rest,
       slug,
-      publishedAt: publishing ? (data.publishedAt ?? new Date()) : data.publishedAt,
+      publishedAt: stampPublishedAt(data.status, data.publishedAt),
     };
 
     if (id) await prisma.episode.update({ where: { id }, data: payload });

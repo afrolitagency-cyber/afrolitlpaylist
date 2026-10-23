@@ -1,3 +1,9 @@
+/**
+ * Checkout initialize, verify, and charge.success webhook signature.
+ * Refunds and hold-release stay separate.
+ */
+import crypto from "node:crypto";
+
 const PAYSTACK_API = "https://api.paystack.co";
 
 function parseMetadata(raw: unknown): Record<string, unknown> | null {
@@ -22,6 +28,17 @@ function secret() {
 
 export function paystackConfigured() {
   return Boolean(secret());
+}
+
+/** HMAC-SHA512 of the raw body, hex, compared to x-paystack-signature. */
+export function verifyPaystackSignature(raw: string, signature: string | null) {
+  const key = secret();
+  if (!key || !signature) return false;
+  const digest = crypto.createHmac("sha512", key).update(raw).digest("hex");
+  const a = Buffer.from(digest);
+  const b = Buffer.from(signature);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
 
 export async function initializeTransaction(input: {
