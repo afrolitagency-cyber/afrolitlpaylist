@@ -25,10 +25,10 @@ export async function acceptInviteAction(_prev: ActionState, formData: FormData)
     const confirm = String(formData.get("confirm") ?? "");
     if (password !== confirm) return { ok: false, error: "The two passwords don't match." };
 
-    await acceptInvite(token, password, String(formData.get("name") ?? "") || undefined);
-    return { ok: true, message: "Account created. Please sign in." };
+    const user = await acceptInvite(token, password, String(formData.get("name") ?? "") || undefined);
+    return { ok: true, message: "Account created. Please sign in.", redirectTo: user.role === "ARTIST" ? "portal" : "admin" };
   });
-  if (result?.ok) redirect("/portal/login");
+  if (result?.ok) redirect(result.redirectTo === "admin" ? "/admin/login" : "/portal/login");
   return result;
 }
 

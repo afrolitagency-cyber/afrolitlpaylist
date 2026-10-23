@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { inviteUser, updateUser } from "@/lib/actions/users";
 import type { ActionState } from "@/lib/actions/_result";
 
@@ -33,7 +33,10 @@ export function UsersTable({
   const [updateState, update] = useActionState<ActionState, FormData>(updateUser, null);
   const msg = inviteState ?? updateState;
   const inviteRoles = assignable.filter((role) => role !== "SUPERADMIN" && (role !== "ARTIST" || canInviteArtists));
-  const defaultInvite = inviteRoles.includes("EDITOR") ? "EDITOR" : inviteRoles[0];
+  const defaultInvite = actorRole === "SUPERADMIN" && inviteRoles.includes("ADMIN")
+    ? "ADMIN"
+    : inviteRoles.includes("EDITOR") ? "EDITOR" : inviteRoles[0];
+  const [inviteRole, setInviteRole] = useState(defaultInvite);
 
   return (
     <div className="space-y-5">
@@ -51,7 +54,7 @@ export function UsersTable({
         </div>
         <div>
           <label htmlFor="role" className="mb-1.5 block text-xs font-bold">Role</label>
-          <select id="role" name="role" defaultValue={defaultInvite} className={field}>
+          <select id="role" name="role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className={field}>
             {inviteRoles.map((role) => (
               <option key={role} value={role}>{ROLE_LABEL[role] ?? role}</option>
             ))}

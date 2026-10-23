@@ -6,7 +6,7 @@ import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { assignableRoles, requireArtistAccess, requireRoleFresh, can } from "@/lib/rbac";
 import { createInvite } from "@/lib/services/invite";
-import { sendArtistInvite } from "@/lib/services/email";
+import { sendAccountInvite } from "@/lib/services/email";
 import { runAction, type ActionState } from "./_result";
 
 const roleEnum = z.enum(["SUPERADMIN", "ADMIN", "EDITOR", "ARTIST", "DOOR"]);
@@ -24,9 +24,8 @@ export async function inviteUser(_prev: ActionState, formData: FormData): Promis
     if (!canAssign(actor.role, role)) return { ok: false, error: "You can't assign that role." };
     if (role === "ARTIST") await requireArtistAccess();
 
-    const token = await createInvite(email, undefined, actor.id);
-    await prisma.invite.updateMany({ where: { email, acceptedAt: null }, data: { role } });
-    const sent = await sendArtistInvite(email, token);
+    const token = await createInvite(email, undefined, actor.id, role);
+    const sent = await sendAccountInvite(email, token, role);
     if (!sent) {
       return { ok: false, error: "The invite was saved, but the email did not send. Check Resend, then send it again." };
     }

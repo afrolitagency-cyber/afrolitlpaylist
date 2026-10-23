@@ -18,7 +18,9 @@ export default async function AcceptInvite({ params }: { params: Promise<{ token
             <>
               <h1 className="text-xl font-bold">Set your password</h1>
               <p className="mb-5 mt-1 text-sm text-(--sub-text)">
-                You&apos;ve been invited to manage an artist profile on AfroLitPlaylist.
+                {invite.role === "ARTIST"
+                  ? "You've been invited to manage an artist profile on AfroLitPlaylist."
+                  : `You've been invited as ${invite.role === "SUPERADMIN" ? "a superadmin" : invite.role === "EDITOR" ? "an editor" : invite.role === "DOOR" ? "door staff" : "an admin"}. Set a password for the dashboard.`}
               </p>
               <InviteForm token={token} email={invite.email} />
             </>

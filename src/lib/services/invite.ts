@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, type Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { uniqueSlug } from "@/lib/services/slug";
 
@@ -18,12 +18,12 @@ export function hashToken(raw: string) {
   return crypto.createHash("sha256").update(raw).digest("hex");
 }
 
-export async function createInvite(email: string, artistId?: string, issuedById?: string) {
+export async function createInvite(email: string, artistId?: string, issuedById?: string, role: Role = "ARTIST") {
   const { raw, hash } = newToken();
   await prisma.invite.create({
     data: {
       email: email.toLowerCase().trim(),
-      role: "ARTIST",
+      role,
       tokenHash: hash,
       artistId: artistId ?? null,
       issuedById: issuedById ?? null,

@@ -2,7 +2,7 @@ import { AuthError } from "@/lib/rbac";
 import { ZodError } from "zod";
 
 export type ActionState =
-  | { ok: true; message?: string; authorizationUrl?: string; reference?: string; id?: string }
+  | { ok: true; message?: string; authorizationUrl?: string; reference?: string; id?: string; redirectTo?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> }
   | null;
 

@@ -215,6 +215,28 @@ export async function sendEventRegistration(
   });
 }
 
+const ROLE_INVITE: Record<string, string> = {
+  SUPERADMIN: "superadmin",
+  ADMIN: "admin",
+  EDITOR: "editor",
+  DOOR: "door staff",
+  ARTIST: "artist",
+};
+
+export function sendAccountInvite(to: string, token: string, role: string) {
+  const label = ROLE_INVITE[role] ?? "admin";
+  return send({
+    to,
+    subject: `Your AfroLitPlaylist ${label} invite`,
+    html: layout(
+      "You've been invited",
+      `<p>Set a password for your ${label} account on AfroLitPlaylist.</p>
+       <p>This link works once and expires in 14 days.</p>`,
+      { href: `${SITE}/portal/invite/${token}`, label: "Set your password" },
+    ),
+  });
+}
+
 export function sendArtistInvite(to: string, token: string, artistName?: string) {
   return send({
     to,
