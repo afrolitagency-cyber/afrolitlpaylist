@@ -33,6 +33,7 @@ export async function signInArtistAction(_prev: ActionState, formData: FormData)
   redirect("/portal");
 }
 
-export async function signOutAction(): Promise<void> {
-  await signOut({ redirectTo: "/admin/login" });
+export async function signOutAction(formData: FormData): Promise<void> {
+  const to = String(formData.get("to") ?? "");
+  await signOut({ redirectTo: to === "portal" ? "/portal/login" : "/admin/login" });
 }

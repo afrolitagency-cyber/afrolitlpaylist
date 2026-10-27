@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireSession, AuthError } from "@/lib/rbac";
 import { Brand } from "@/components/ui/Logo";
+import { LogoutButton } from "@/components/LogoutButton";
 
 /**
  * The portal shows an artist only what they own. The menu is deliberately short:
@@ -37,12 +38,13 @@ export default async function PortalLayout({ children }: { children: React.React
       <header className="border-b border-(--border-strong) bg-(--header-bg)">
         <div className="wrap flex h-16 items-center justify-between gap-4">
           <Link href="/portal"><Brand size={36} /></Link>
-          <nav className="flex gap-5 text-sm font-semibold">
+          <nav className="flex items-center gap-5 text-sm font-semibold">
             {links.map((l) => (
               <Link key={l.href} href={l.href as Route} className="text-(--sub-text) hover:text-(--body-text)">
                 {l.label}
               </Link>
             ))}
+            <LogoutButton to="portal" />
           </nav>
         </div>
       </header>

@@ -107,6 +107,8 @@ export const can = {
   sendCampaigns: ["SUPERADMIN", "ADMIN"] as Role[],
   manageUsers: ["SUPERADMIN", "ADMIN"] as Role[],
   manageSettings: ["SUPERADMIN", "ADMIN"] as Role[],
+  /** Order list, export, and resend. Editors sell nothing and do not see this. */
+  viewPayments: ["SUPERADMIN", "ADMIN"] as Role[],
   /** Scanner-only. Must never be added to manageContent. */
   scanDoor: ["SUPERADMIN", "ADMIN", "EDITOR", "DOOR"] as Role[],
 };

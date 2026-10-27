@@ -161,7 +161,7 @@ export async function deleteTicketTier(_prev: ActionState, formData: FormData): 
 
 export async function resendOrderTickets(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await requireRoleFresh(...can.manageContent);
+    await requireRoleFresh(...can.viewPayments);
     const reference = String(formData.get("reference") ?? "").trim();
     if (!reference) return { ok: false, error: "Missing order reference." };
     const { resendTicketEmail } = await import("@/lib/orders");

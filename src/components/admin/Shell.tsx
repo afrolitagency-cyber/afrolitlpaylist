@@ -5,6 +5,7 @@ import { LogoMark } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { LogoutButton } from "@/components/LogoutButton";
 
 type IconName =
   | "overview"
@@ -38,7 +39,7 @@ const NAV: Item[] = [
   { label: "Artists", href: "/admin/artists", icon: "artists", artist: true },
   { label: "Albums", href: "/admin/albums", icon: "albums", artist: true },
   { label: "Events", href: "/admin/events", icon: "events" },
-  { label: "Ticket payments", href: "/admin/payments", icon: "payments", roles: ["SUPERADMIN", "ADMIN", "EDITOR"] },
+  { label: "Ticket payments", href: "/admin/payments", icon: "payments", roles: ["SUPERADMIN", "ADMIN"] },
   { label: "Door scan", href: "/admin/scan", icon: "scan", roles: ["SUPERADMIN", "ADMIN", "EDITOR", "DOOR"] },
   { label: "Episodes", href: "/admin/episodes", icon: "episodes" },
   { label: "Gallery", href: "/admin/gallery", icon: "gallery" },
@@ -291,6 +292,7 @@ export async function AdminShell({
           <div className="ml-auto flex items-center gap-2.5">
             <ThemeToggle />
             {actions}
+            <LogoutButton />
           </div>
         </header>
         <div className="flex-1 p-6">{children}</div>

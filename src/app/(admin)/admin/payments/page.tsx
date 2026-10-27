@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireRoleFresh, can, AuthError } from "@/lib/rbac";
 import { AdminShell, StatusPill } from "@/components/admin/Shell";
 import { formatKobo } from "@/lib/money";
 import { ResendTicketButton } from "@/components/admin/ResendTicketButton";
@@ -20,7 +21,13 @@ export default async function PaymentsPage({
 }: {
   searchParams: Promise<{ eventId?: string; status?: string; q?: string; from?: string; to?: string }>;
 }) {
-  const user = await requireRole(...can.manageContent);
+  let user;
+  try {
+    user = await requireRoleFresh(...can.viewPayments);
+  } catch (err) {
+    if (err instanceof AuthError) redirect(err.code === "UNAUTHENTICATED" ? "/admin/login" : "/admin");
+    throw err;
+  }
   const sp = await searchParams;
   const eventId = sp.eventId || "";
   const status = STATUSES.includes(sp.status as OrderStatus) ? (sp.status as OrderStatus) : "";

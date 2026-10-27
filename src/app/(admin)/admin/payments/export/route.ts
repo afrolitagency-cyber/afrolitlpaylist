@@ -14,10 +14,11 @@ function cell(v: string) {
 
 export async function GET(req: Request) {
   try {
-    await requireRole(...can.manageContent);
+    await requireRole(...can.viewPayments);
   } catch (err) {
     if (err instanceof AuthError) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
+      const path = err.code === "UNAUTHENTICATED" ? "/admin/login" : "/admin";
+      return NextResponse.redirect(new URL(path, req.url));
     }
     throw err;
   }
