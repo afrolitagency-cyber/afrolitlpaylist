@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { saveEvent } from "@/lib/actions/events";
+import { saveEvent, reviewEvent } from "@/lib/actions/events";
 import type { ActionState } from "@/lib/actions/_result";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 
@@ -17,15 +17,16 @@ export type EventValues = {
   ticketed: boolean; priceFrom: string; capacity: string; soldOut: boolean;
   presentedBy: string; presentedByArtistId: string; hostContact: string;
   hostSharePercent: string; settlementNote: string;
-  status: string; coverImage: string;
+  status: string; coverImage: string; reviewNote: string;
 };
 
 export function EventForm({
-  values, series, artists,
+  values, series, artists, canPublish,
 }: {
   values: EventValues;
   series: { id: string; name: string }[];
   artists: { id: string; name: string }[];
+  canPublish: boolean;
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveEvent, null);
   const [status, setStatus] = useState(values.status);
@@ -176,16 +177,55 @@ export function EventForm({
       <div className="space-y-4">
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <h3 className="mb-4 text-[15px] font-bold">Publishing</h3>
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${field} mb-4`} aria-label="Status">
-            <option value="DRAFT">Draft</option>
-            <option value="SCHEDULED">Scheduled</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="ARCHIVED">Archived</option>
-          </select>
-          <button type="submit" disabled={pending}
-            className="w-full rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-60">
-            {pending ? "Saving…" : "Save event"}
-          </button>
+          {values.reviewNote ? (
+            <div className="mb-4 rounded-r border-l-[3px] border-amber-500 bg-(--surface-alt) p-3">
+              <b className="text-sm">Sent back</b>
+              <p className="mt-1 text-sm text-(--sub-text)">{values.reviewNote}</p>
+            </div>
+          ) : null}
+          {canPublish ? (
+            <>
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${field} mb-4`} aria-label="Status">
+                <option value="DRAFT">Draft</option>
+                <option value="PENDING">Awaiting approval</option>
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="PUBLISHED">Published</option>
+                <option value="ARCHIVED">Archived</option>
+              </select>
+              <button type="submit" disabled={pending}
+                className="w-full rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-60">
+                {pending ? "Saving…" : "Save event"}
+              </button>
+            </>
+          ) : values.status === "PUBLISHED" ? (
+            <>
+              <p className="mb-4 text-sm text-(--sub-text)">This event is live. Saving keeps it published.</p>
+              <button type="submit" disabled={pending}
+                className="w-full rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-60">
+                {pending ? "Saving…" : "Save event"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="mb-4 text-sm text-(--sub-text)">
+                {status === "PENDING"
+                  ? "Waiting for an admin to approve this before it goes on the site."
+                  : "Save a draft, or send it for an admin to approve. It stays off the site until then."}
+              </p>
+              <div className="grid gap-2">
+                <button type="submit" name="intent" value="draft" disabled={pending}
+                  onClick={() => setStatus("DRAFT")}
+                  className="w-full rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-60">
+                  {pending ? "Saving…" : "Save draft"}
+                </button>
+                <button type="submit" name="intent" value="review" disabled={pending}
+                  onClick={() => setStatus("PENDING")}
+                  className="w-full rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-60">
+                  {pending ? "Saving…" : "Submit for review"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
@@ -242,6 +282,38 @@ export function EventForm({
             hint="Optional. Without one, a red pattern cover is used."
           />
         </div>
+      </div>
+    </form>
+  );
+}
+
+export function EventReview({ id }: { id: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(reviewEvent, null);
+
+  return (
+    <form action={action} className="mt-5 rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
+      <input type="hidden" name="id" value={id} />
+      <h3 className="text-[15px] font-bold">Review</h3>
+      <p className="mb-4 mt-1 text-sm text-(--sub-text)">
+        Approving publishes this event. Sending it back keeps it off the site and shows your note to the editor.
+      </p>
+      {state ? (
+        <p role={state.ok ? "status" : "alert"}
+          className={`mb-4 rounded border p-3 text-sm ${state.ok ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-(--primary)/40 bg-(--primary)/10 text-(--primary)"}`}>
+          {state.ok ? state.message : state.error}
+        </p>
+      ) : null}
+      <label className={label} htmlFor="reviewNote">Note for the editor</label>
+      <textarea id="reviewNote" name="reviewNote" rows={3} className={`${field} mb-4`} placeholder="Required only when sending it back" />
+      <div className="grid gap-2 sm:grid-cols-2">
+        <button type="submit" name="decision" value="approve" disabled={pending}
+          className="rounded bg-(--primary) py-3 text-sm font-semibold text-white disabled:opacity-60">
+          {pending ? "Working…" : "Approve and publish"}
+        </button>
+        <button type="submit" name="decision" value="return" disabled={pending}
+          className="rounded border border-(--border-strong) py-3 text-sm font-semibold disabled:opacity-60">
+          Send back
+        </button>
       </div>
     </form>
   );

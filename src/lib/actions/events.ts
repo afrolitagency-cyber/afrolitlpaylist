@@ -3,17 +3,33 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireRoleFresh, can } from "@/lib/rbac";
+import { requireRoleFresh, can } from "@/lib/rbac";
 import { eventInput } from "@/lib/validation";
 import { uniqueSlug } from "@/lib/services/slug";
 import { runAction, type ActionState } from "./_result";
 
 export async function saveEvent(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
+    const actor = await requireRoleFresh(...can.manageContent);
     const id = String(formData.get("id") ?? "");
-    const publishing = formData.get("status") === "PUBLISHED";
-    if (publishing) await requireRoleFresh(...can.manageContent);
-    else await requireRole(...can.manageContent);
+    const existing = id
+      ? await prisma.event.findUnique({ where: { id }, select: { status: true } })
+      : null;
+    if (id && !existing) return { ok: false, error: "That event no longer exists." };
+
+    const requested = String(formData.get("status") ?? "");
+    const intent = String(formData.get("intent") ?? "");
+    let status: "DRAFT" | "PENDING" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
+    if (actor.role === "EDITOR") {
+      if (existing?.status === "PUBLISHED") status = "PUBLISHED";
+      else if (intent === "review" || requested === "PENDING") status = "PENDING";
+      else if (intent === "draft" || requested === "DRAFT" || requested === "") status = "DRAFT";
+      else return { ok: false, error: "An admin has to approve this event before it is published." };
+    } else if (requested === "DRAFT" || requested === "PENDING" || requested === "SCHEDULED" || requested === "PUBLISHED" || requested === "ARCHIVED") {
+      status = requested;
+    } else {
+      status = "DRAFT";
+    }
 
     const scheduleLines = String(formData.get("schedule") ?? "")
       .split("\n")
@@ -53,7 +69,7 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
         ? Math.min(100, Math.max(0, Math.trunc(Number(formData.get("hostSharePercent"))))) * 100
         : 0,
       settlementNote: formData.get("settlementNote") || null,
-      status: formData.get("status"),
+      status,
       coverImage: formData.get("coverImage") || null,
     });
 
@@ -69,6 +85,7 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
           data: {
             ...rest,
             slug,
+            ...(status === "PUBLISHED" ? { reviewNote: null } : {}),
             lineup: { set: lineup },
             series: seriesId ? { connect: { id: seriesId } } : { disconnect: true },
             presentedByArtist: presentedByArtistId
@@ -80,6 +97,7 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
           data: {
             ...rest,
             slug,
+            ...(status === "PUBLISHED" ? { reviewNote: null } : {}),
             lineup: { connect: lineup },
             ...(seriesId ? { series: { connect: { id: seriesId } } } : {}),
             ...(presentedByArtistId
@@ -94,7 +112,16 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
     revalidatePath("/");
     revalidatePath(`/events/${event.slug}`);
     if (event.seriesId) revalidatePath("/", "layout"); // the nav dropdown is built from series events
-    return { ok: true, message: publishing ? "Event published." : "Event saved." };
+    const publishing = status === "PUBLISHED";
+    const submitted = status === "PENDING";
+    return {
+      ok: true,
+      message: publishing
+        ? "Event published."
+        : submitted
+          ? "Sent for review. An admin will approve it before it goes live."
+          : "Event saved.",
+    };
   });
 }
 
@@ -134,5 +161,33 @@ export async function saveSeries(_prev: ActionState, formData: FormData): Promis
     revalidatePath("/admin/events/series");
     revalidatePath("/", "layout"); // nav is data-driven
     return { ok: true, message: "Series saved." };
+  });
+}
+
+export async function reviewEvent(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await requireRoleFresh("SUPERADMIN", "ADMIN");
+    const id = String(formData.get("id") ?? "");
+    const decision = String(formData.get("decision") ?? "");
+    const event = await prisma.event.findUnique({ where: { id }, select: { id: true, slug: true, seriesId: true } });
+    if (!event) return { ok: false, error: "That event no longer exists." };
+
+    if (decision === "approve") {
+      await prisma.event.update({ where: { id }, data: { status: "PUBLISHED", reviewNote: null } });
+    } else if (decision === "return") {
+      const note = String(formData.get("reviewNote") ?? "").trim();
+      if (note.length < 3) return { ok: false, error: "Tell the editor what to change." };
+      await prisma.event.update({ where: { id }, data: { status: "DRAFT", reviewNote: note } });
+    } else {
+      return { ok: false, error: "Unknown action." };
+    }
+
+    revalidateTag("events");
+    revalidatePath("/admin/events");
+    revalidatePath("/events");
+    revalidatePath("/");
+    revalidatePath(`/events/${event.slug}`);
+    if (event.seriesId) revalidatePath("/", "layout");
+    return { ok: true, message: decision === "approve" ? "Event published." : "Sent back to the editor." };
   });
 }

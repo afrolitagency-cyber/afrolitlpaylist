@@ -93,7 +93,7 @@ export const eventInput = z.object({
   hostContact: z.string().max(200).optional().nullable().transform((v) => v?.trim() || null),
   hostShareBps: z.number().int().min(0).max(10_000).default(0),
   settlementNote: z.string().max(4000).optional().nullable().transform((v) => v?.trim() || null),
-  status: z.enum(["DRAFT", "SCHEDULED", "PUBLISHED", "ARCHIVED"]),
+  status: z.enum(["DRAFT", "PENDING", "SCHEDULED", "PUBLISHED", "ARCHIVED"]),
   coverImage: z.union([z.string().url(), z.literal("")]).optional().nullable()
     .transform((v) => (v ? v : null)),
 });

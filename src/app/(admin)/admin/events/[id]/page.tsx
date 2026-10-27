@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireRoleFresh, can } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
-import { EventForm, type EventValues } from "@/components/admin/EventForm";
+import { EventForm, EventReview, type EventValues } from "@/components/admin/EventForm";
 import { TicketTiersForm } from "@/components/admin/TicketTiersForm";
 import { readSchedule } from "@/lib/events";
 import { bpsToPercent } from "@/lib/money";
@@ -22,12 +22,13 @@ const BLANK: EventValues = {
   registrationOpen: false, registrationUrl: "", ticketed: false, priceFrom: "",
   capacity: "", soldOut: false,
   presentedBy: "", presentedByArtistId: "", hostContact: "", hostSharePercent: "0", settlementNote: "",
-  status: "DRAFT", coverImage: "",
+  status: "DRAFT", coverImage: "", reviewNote: "",
 };
 
 export default async function EventEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireRole(...can.manageContent);
+  const user = await requireRoleFresh(...can.manageContent);
+  const canPublish = user.role === "SUPERADMIN" || user.role === "ADMIN";
   const isNew = id === "new";
 
   const [event, series, artists, regs, tiers] = await Promise.all([
@@ -85,6 +86,7 @@ export default async function EventEditor({ params }: { params: Promise<{ id: st
         settlementNote: event.settlementNote ?? "",
         status: event.status,
         coverImage: event.coverImage ?? "",
+        reviewNote: event.reviewNote ?? "",
       }
     : BLANK;
 
@@ -93,7 +95,8 @@ export default async function EventEditor({ params }: { params: Promise<{ id: st
 
   return (
     <AdminShell role={user.role} email={user.email} title={isNew ? "New event" : "Edit event"} subtitle={event?.title ?? "Draft"}>
-      <EventForm values={values} series={series} artists={artists} />
+      <EventForm values={values} series={series} artists={artists} canPublish={canPublish} />
+      {!isNew && canPublish && event?.status === "PENDING" ? <EventReview id={id} /> : null}
 
       {!isNew ? (
         <TicketTiersForm
