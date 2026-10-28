@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { authConfig } from "@/lib/auth.config";
+import { dashboardPath } from "@/lib/dashboard";
 
 const { auth } = NextAuth(authConfig);
 
@@ -25,6 +26,7 @@ export default async function middleware(req: NextRequest) {
 
   if (pathname.startsWith("/portal") && !pathname.startsWith("/portal/login") && !pathname.startsWith("/portal/invite")) {
     if (!role) return NextResponse.redirect(new URL("/portal/login", req.url));
+    if (role !== "ARTIST") return NextResponse.redirect(new URL(dashboardPath(role), req.url));
   }
 
   const requestHeaders = new Headers(req.headers);

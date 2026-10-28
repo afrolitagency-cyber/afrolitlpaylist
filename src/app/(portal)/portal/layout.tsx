@@ -3,6 +3,8 @@ import type { Route } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireSession, AuthError } from "@/lib/rbac";
+import { prisma } from "@/lib/prisma";
+import { dashboardPath } from "@/lib/dashboard";
 import { Brand } from "@/components/ui/Logo";
 import { LogoutButton } from "@/components/LogoutButton";
 
@@ -20,11 +22,24 @@ export default async function PortalLayout({ children }: { children: React.React
     return <>{children}</>;
   }
 
+  let session;
   try {
-    await requireSession();
+    session = await requireSession();
   } catch (err) {
     if (err instanceof AuthError) redirect("/portal/login");
     throw err;
+  }
+
+  const fresh = await prisma.user.findUnique({
+    where: { id: session.id },
+    select: { role: true, status: true },
+  });
+  if (!fresh || fresh.status !== "ACTIVE" || fresh.role !== "ARTIST") {
+    // A staff session that still says "artist" would bounce between the two
+    // dashboards. Send them through sign-in so the token matches the account.
+    if (fresh && fresh.status === "ACTIVE" && session.role !== fresh.role) redirect("/admin/login");
+    if (fresh && fresh.status === "ACTIVE") redirect(dashboardPath(fresh.role));
+    redirect("/portal/login");
   }
 
   const links = [

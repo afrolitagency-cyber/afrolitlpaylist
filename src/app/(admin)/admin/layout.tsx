@@ -17,10 +17,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     return <>{children}</>;
   }
 
+  const onScan = pathname === "/admin/scan" || pathname.startsWith("/admin/scan/");
   try {
-    await requireRole(...can.manageContent);
+    await requireRole(...(onScan ? can.scanDoor : can.manageContent));
   } catch (err) {
-    if (err instanceof AuthError) redirect(err.code === "UNAUTHENTICATED" ? "/admin/login" : "/portal");
+    if (err instanceof AuthError) redirect("/admin/login");
     throw err;
   }
   return <>{children}</>;
