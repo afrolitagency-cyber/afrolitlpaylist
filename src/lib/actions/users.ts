@@ -72,6 +72,15 @@ export async function updateUser(_prev: ActionState, formData: FormData): Promis
         where: { id },
         data: { status: action === "suspend" ? "SUSPENDED" : "ACTIVE" },
       });
+    } else if (action === "delete") {
+      if (target.role === "SUPERADMIN") {
+        const supers = await prisma.user.count({ where: { role: "SUPERADMIN", status: "ACTIVE" } });
+        if (supers <= 1) return { ok: false, error: "This is the last superadmin. Promote someone else first." };
+      }
+      await prisma.mediaAsset.updateMany({ where: { uploadedById: id }, data: { uploadedById: null } });
+      await prisma.user.delete({ where: { id } });
+      revalidatePath("/admin/users");
+      return { ok: true, message: "Login deleted. Their posts and artist page stay on the site." };
     } else if (action === "role") {
       const role = roleEnum.parse(formData.get("role"));
       if (!canAssign(actor.role, role)) return { ok: false, error: "You can't assign that role." };

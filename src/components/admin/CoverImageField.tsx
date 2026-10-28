@@ -42,7 +42,11 @@ export function CoverImageField({
     <div className="mb-4">
       <span className="mb-1.5 block text-xs font-bold">
         {label}
-        {required ? <span className="font-normal text-(--sub-text)"> — required</span> : null}
+        {required ? (
+          <span className="text-(--primary)"> *</span>
+        ) : (
+          <span className="font-normal text-(--sub-text)"> — Optional</span>
+        )}
       </span>
       <input type="hidden" name={name} value={url} readOnly />
 

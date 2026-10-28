@@ -1,5 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireRoleFresh, can, AuthError } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +8,13 @@ export const dynamic = "force-dynamic";
 /** Real numbers from our own PageView rows — no GA4 dependency. Thin on
  *  purpose: enough to see what's working, not a BI tool. */
 export default async function AnalyticsPage() {
-  const user = await requireRole(...can.manageContent);
+  let user;
+  try {
+    user = await requireRoleFresh(...can.viewAnalytics);
+  } catch (err) {
+    if (err instanceof AuthError) redirect(err.code === "UNAUTHENTICATED" ? "/admin/login" : "/admin");
+    throw err;
+  }
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const human = { isBot: false, createdAt: { gte: since } };
 

@@ -10,6 +10,7 @@ import {
   defaultsForKind,
   matchTicketKind,
 } from "@/lib/ticket-kinds";
+import { Opt, Req } from "@/components/admin/FieldMarks";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -109,7 +110,7 @@ function TierForm({
 
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={label} htmlFor={`kind-${fid}`}>Tier</label>
+          <label className={label} htmlFor={`kind-${fid}`}>Tier<Req /></label>
           <select
             id={`kind-${fid}`}
             value={kind}
@@ -135,7 +136,7 @@ function TierForm({
           ) : null}
         </div>
         <div>
-          <label className={label} htmlFor={`price-${fid}`}>Price (₦)</label>
+          <label className={label} htmlFor={`price-${fid}`}>Price (₦)<Req /></label>
           <input
             id={`price-${fid}`}
             name="priceNaira"
@@ -150,13 +151,13 @@ function TierForm({
       </div>
 
       <div className="mb-3">
-        <label className={label} htmlFor={`desc-${fid}`}>Description</label>
+        <label className={label} htmlFor={`desc-${fid}`}>Description<Opt /></label>
         <input id={`desc-${fid}`} name="description" defaultValue={tier?.description ?? ""} className={field} />
       </div>
 
       <div className="mb-3 grid gap-3 sm:grid-cols-3">
         <div>
-          <label className={label} htmlFor={`alloc-${fid}`}>Allocation</label>
+          <label className={label} htmlFor={`alloc-${fid}`}>Allocation<Req /></label>
           <input
             id={`alloc-${fid}`}
             name="allocation"
@@ -169,24 +170,24 @@ function TierForm({
           />
         </div>
         <div>
-          <label className={label} htmlFor={`max-${fid}`}>Max per order</label>
+          <label className={label} htmlFor={`max-${fid}`}>Max per order<Opt /></label>
           <input id={`max-${fid}`} name="maxPerOrder" type="number" min={1} max={50} defaultValue={tier ? String(tier.maxPerOrder) : "10"} className={field} />
           <p className="mt-1.5 text-xs text-(--sub-text)">How many of this ticket one buyer can add in a single checkout. Not a venue cap.</p>
         </div>
         <div>
-          <label className={label} htmlFor={`sort-${fid}`}>Sort</label>
+          <label className={label} htmlFor={`sort-${fid}`}>Sort<Opt /></label>
           <input id={`sort-${fid}`} name="sortOrder" type="number" min={0} defaultValue={tier ? String(tier.sortOrder) : "0"} className={field} />
         </div>
       </div>
 
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={label} htmlFor={`admits-${fid}`}>Admits (people per ticket)</label>
+          <label className={label} htmlFor={`admits-${fid}`}>Admits (people per ticket)<Opt /></label>
           <input id={`admits-${fid}`} name="admitsCount" type="number" min={1} max={100} value={admits} onChange={(e) => setAdmits(e.target.value)} className={field} />
           <p className="mt-1.5 text-xs text-(--sub-text)">People let in on one barcode. 1 for a seat. 10 for a table of 10 — one scan admits the group. Does not multiply the price.</p>
         </div>
         <div>
-          <label className={label} htmlFor={`roll-${fid}`}>Unsold rolls into</label>
+          <label className={label} htmlFor={`roll-${fid}`}>Unsold rolls into<Opt /></label>
           <select id={`roll-${fid}`} name="rollsIntoTierId" defaultValue={tier?.rollsIntoTierId ?? ""} className={field} disabled={others.length === 0}>
             <option value="">— none (leftover expires) —</option>
             {others.map((t) => (
@@ -199,12 +200,12 @@ function TierForm({
 
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={label} htmlFor={`start-${fid}`}>Sales start</label>
+          <label className={label} htmlFor={`start-${fid}`}>Sales start<Opt /></label>
           <input id={`start-${fid}`} name="salesStartsAt" type="datetime-local" defaultValue={forInput(tier?.salesStartsAt)} className={field} />
-          <p className="mt-1.5 text-xs text-(--sub-text)">Optional label (e.g. Early Bird from 16 Oct). Leave blank to sell now — a future date does not lock checkout.</p>
+          <p className="mt-1.5 text-xs text-(--sub-text)">Leave blank to sell now. A future date does not lock checkout.</p>
         </div>
         <div>
-          <label className={label} htmlFor={`end-${fid}`}>Sales end</label>
+          <label className={label} htmlFor={`end-${fid}`}>Sales end<Opt /></label>
           <input id={`end-${fid}`} name="salesEndsAt" type="datetime-local" defaultValue={forInput(tier?.salesEndsAt)} className={field} />
         </div>
       </div>

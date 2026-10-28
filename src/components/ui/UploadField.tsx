@@ -8,11 +8,12 @@ type Props = {
   defaultValue?: string;
   kind?: "image" | "audio";
   hint?: string;
+  optional?: boolean;
 };
 
 /** Uploads straight to Cloudinary using a server-signed payload, then posts the
  *  resulting URL in a hidden field. The file never touches our server. */
-export function UploadField({ name, label, defaultValue = "", kind = "image", hint }: Props) {
+export function UploadField({ name, label, defaultValue = "", kind = "image", hint, optional = false }: Props) {
   const [url, setUrl] = useState(defaultValue);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +52,10 @@ export function UploadField({ name, label, defaultValue = "", kind = "image", hi
 
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-bold">{label}</label>
+      <label className="mb-1.5 block text-xs font-bold">
+        {label}
+        {optional ? <span className="font-normal text-(--sub-text)"> — Optional</span> : null}
+      </label>
       <input type="hidden" name={name} value={url} readOnly />
 
       {url ? (

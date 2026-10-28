@@ -7,6 +7,7 @@ import type { ActionState } from "@/lib/actions/_result";
 import { useActionToast } from "@/components/ui/Toast";
 import { renderBlogDigest, renderEventsDigest, type BlogItem, type EventItem } from "@/lib/newsletter-templates";
 import type { CampaignKind } from "@prisma/client";
+import { Opt, Req } from "@/components/admin/FieldMarks";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -182,21 +183,21 @@ export function CampaignComposer({
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <div className="mb-4">
-            <label className={label} htmlFor="subject">Subject</label>
+            <label className={label} htmlFor="subject">Subject<Req /></label>
             <input id="subject" name="subject" required value={subject} onChange={(e) => setSubject(e.target.value)}
               disabled={locked} className={field} />
           </div>
           <div className="mb-4">
-            <label className={label} htmlFor="previewText">Preview text</label>
+            <label className={label} htmlFor="previewText">Preview text<Opt /></label>
             <input id="previewText" name="previewText" value={previewText} onChange={(e) => setPreviewText(e.target.value)} disabled={locked} className={field} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={label} htmlFor="fromName">From name</label>
+              <label className={label} htmlFor="fromName">From name<Opt /></label>
               <input id="fromName" name="fromName" defaultValue={values.fromName || "AfroLitPlaylist"} disabled={locked} className={field} />
             </div>
             <div>
-              <label className={label} htmlFor="fromEmail">From email</label>
+              <label className={label} htmlFor="fromEmail">From email<Opt /></label>
               <input id="fromEmail" name="fromEmail" type="email" defaultValue={values.fromEmail} disabled={locked} className={field} />
               <p className="mt-1 text-[11px] text-(--sub-text)">Must be a domain verified on Resend. Confirm emails already use that domain — a different From is why campaigns fail.</p>
             </div>
@@ -206,20 +207,20 @@ export function CampaignComposer({
         {kind !== "CUSTOM" ? (
           <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5 space-y-4">
             <div>
-              <label className={label} htmlFor="issueLabel">Issue label</label>
+              <label className={label} htmlFor="issueLabel">Issue label<Opt /></label>
               <input id="issueLabel" name="issueLabel" value={issueLabel} onChange={(e) => setIssueLabel(e.target.value)}
                 placeholder={kind === "EVENTS" ? "Events · Oct 2026" : "Blog digest · Oct 2026"} disabled={locked} className={field} />
             </div>
             <div>
-              <label className={label} htmlFor="kicker">Kicker</label>
+              <label className={label} htmlFor="kicker">Kicker<Opt /></label>
               <input id="kicker" name="kicker" value={kicker} onChange={(e) => setKicker(e.target.value)} disabled={locked} className={field} />
             </div>
             <div>
-              <label className={label} htmlFor="heroTitle">Headline</label>
+              <label className={label} htmlFor="heroTitle">Headline<Opt /></label>
               <input id="heroTitle" name="heroTitle" value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} disabled={locked} className={field} />
             </div>
             <div>
-              <label className={label} htmlFor="intro">Intro (after “Hey {`{{name}}`}”)</label>
+              <label className={label} htmlFor="intro">Intro (after “Hey {`{{name}}`}”)<Opt /></label>
               <textarea id="intro" name="intro" rows={3} value={intro} onChange={(e) => setIntro(e.target.value)} disabled={locked} className={field} />
             </div>
 
@@ -251,7 +252,7 @@ export function CampaignComposer({
           </div>
         ) : (
           <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
-            <label className={label} htmlFor="body">Raw HTML</label>
+            <label className={label} htmlFor="body">Raw HTML<Opt /></label>
             <textarea id="body" name="body" rows={16} value={body} onChange={(e) => setBody(e.target.value)}
               disabled={locked} className={`${field} font-mono text-[13px]`} placeholder="Paste a finished HTML email. Scripts are stripped." />
           </div>
@@ -260,12 +261,12 @@ export function CampaignComposer({
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <div className="mb-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={label} htmlFor="audienceTag">Audience tag</label>
+              <label className={label} htmlFor="audienceTag">Audience tag<Opt /></label>
               <input id="audienceTag" name="audienceTag" defaultValue={values.audienceTag}
                 placeholder="Leave blank for the whole list" disabled={locked} className={field} />
             </div>
             <div>
-              <label className={label} htmlFor="scheduledAt">Send at (Africa/Lagos)</label>
+              <label className={label} htmlFor="scheduledAt">Send at (Africa/Lagos)<Opt /></label>
               <input id="scheduledAt" name="scheduledAt" type="datetime-local" defaultValue={values.scheduledAt}
                 disabled={locked} className={field} />
             </div>

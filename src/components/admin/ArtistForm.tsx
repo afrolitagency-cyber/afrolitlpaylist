@@ -5,6 +5,7 @@ import { saveArtist } from "@/lib/actions/artists";
 import type { ActionState } from "@/lib/actions/_result";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { GENRES, parseGenres } from "@/lib/genres";
+import { Opt, Req } from "@/components/admin/FieldMarks";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -58,15 +59,15 @@ export function ArtistForm({ values, canInvite }: { values: ArtistFormValues; ca
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <div className="mb-4">
-            <label className={label} htmlFor="name">Artist name</label>
+            <label className={label} htmlFor="name">Artist name<Req /></label>
             <input id="name" name="name" defaultValue={values.name} required className={field} />
           </div>
           <div className="mb-4">
-            <label className={label} htmlFor="location">Location</label>
+            <label className={label} htmlFor="location">Location<Opt /></label>
             <input id="location" name="location" defaultValue={values.location} className={field} />
           </div>
           <fieldset className="mb-4">
-            <legend className={label}>Genres</legend>
+            <legend className={label}>Genres<Opt /></legend>
             <div className="flex flex-wrap gap-2">
               {GENRES.map((genre) => (
                 <label key={genre} className="cursor-pointer">
@@ -85,7 +86,7 @@ export function ArtistForm({ values, canInvite }: { values: ArtistFormValues; ca
             </div>
           </fieldset>
           <div>
-            <label className={label} htmlFor="bio">Bio</label>
+            <label className={label} htmlFor="bio">Bio<Opt /></label>
             <textarea id="bio" name="bio" rows={6} defaultValue={values.bio} className={field} />
           </div>
         </div>
@@ -105,7 +106,7 @@ export function ArtistForm({ values, canInvite }: { values: ArtistFormValues; ca
             hint="1600 × 900 works best."
           />
           <div>
-            <label className={label} htmlFor="streamEmbedUrl">Music embed URL</label>
+            <label className={label} htmlFor="streamEmbedUrl">Music embed URL<Opt /></label>
             <input
               id="streamEmbedUrl"
               name="streamEmbedUrl"
@@ -140,7 +141,7 @@ export function ArtistForm({ values, canInvite }: { values: ArtistFormValues; ca
               <p className="mb-3 text-sm text-(--sub-text)">
                 Leave this empty to keep the profile unclaimed. An email here invites that person to take it over.
               </p>
-              <label className={label} htmlFor="claimEmail">Invite email</label>
+              <label className={label} htmlFor="claimEmail">Invite email<Opt /></label>
               <input id="claimEmail" name="claimEmail" type="email" value={claimEmail} onChange={(e) => setClaimEmail(e.target.value)} placeholder="name@example.com" className={field} />
             </>
           ) : (

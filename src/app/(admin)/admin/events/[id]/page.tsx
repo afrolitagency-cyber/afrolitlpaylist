@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRoleFresh, can } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
-import { EventForm, EventReview, type EventValues } from "@/components/admin/EventForm";
+import { EventForm, EventReview, UnpublishRequest, UnpublishReview, type EventValues } from "@/components/admin/EventForm";
 import { TicketTiersForm } from "@/components/admin/TicketTiersForm";
 import { readSchedule } from "@/lib/events";
 import { bpsToPercent } from "@/lib/money";
@@ -96,6 +96,12 @@ export default async function EventEditor({ params }: { params: Promise<{ id: st
   return (
     <AdminShell role={user.role} email={user.email} title={isNew ? "New event" : "Edit event"} subtitle={event?.title ?? "Draft"}>
       <EventForm values={values} series={series} artists={artists} canPublish={canPublish} />
+      {!isNew && !canPublish && event?.status === "PUBLISHED" ? (
+        <UnpublishRequest id={id} note={event.unpublishNote ?? ""} />
+      ) : null}
+      {!isNew && canPublish && event?.unpublishNote ? (
+        <UnpublishReview id={id} note={event.unpublishNote} />
+      ) : null}
       {!isNew && canPublish && event?.status === "PENDING" ? <EventReview id={id} /> : null}
 
       {!isNew ? (

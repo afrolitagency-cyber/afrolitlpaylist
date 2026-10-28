@@ -14,11 +14,12 @@ export default async function AdminDashboard() {
   });
   const artistAccess = fresh?.role === "SUPERADMIN" || (fresh?.role === "ADMIN" && Boolean(fresh.artistAccess));
 
-  const [pendingArtists, pendingComments, drafts, pendingEvents, submissions, eventsWaiting] = await Promise.all([
+  const [pendingArtists, pendingComments, drafts, pendingEvents, unpublishCount, submissions, eventsWaiting, unpublishAsked] = await Promise.all([
     prisma.artist.count({ where: { status: "PENDING" } }),
     prisma.comment.count({ where: { status: "PENDING" } }),
     prisma.post.count({ where: { status: "DRAFT" } }),
     prisma.event.count({ where: { status: "PENDING" } }),
+    prisma.event.count({ where: { status: "PUBLISHED", unpublishNote: { not: null } } }),
     prisma.artist.findMany({
       where: { status: { in: ["PENDING", "CHANGES_REQUESTED"] } },
       orderBy: { submittedAt: "desc" },
@@ -31,10 +32,17 @@ export default async function AdminDashboard() {
       take: 6,
       select: { id: true, title: true, startsAt: true, city: true, venue: true },
     }),
+    prisma.event.findMany({
+      where: { status: "PUBLISHED", unpublishNote: { not: null } },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
+      select: { id: true, title: true, startsAt: true, city: true, venue: true, unpublishNote: true },
+    }),
   ]);
 
   const queues = [
     { label: "Events waiting", count: pendingEvents, href: "/admin/events", hint: "Need approval" },
+    { label: "Take off the site", count: unpublishCount, href: "/admin/events", hint: "Editor asked" },
     ...(artistAccess
       ? [{ label: "Artist submissions", count: pendingArtists, href: "/admin/artists?status=PENDING", hint: "Awaiting review" }]
       : []),
@@ -57,7 +65,7 @@ export default async function AdminDashboard() {
       <h2 className="mb-4 text-lg font-bold">Needs your attention</h2>
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {queues.map((q) => (
-          <Link key={q.href} href={q.href as Route} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5 hover:border-(--primary)">
+          <Link key={q.label} href={q.href as Route} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5 hover:border-(--primary)">
             <span className="text-sm font-semibold">{q.label}</span>
             <div className="mt-4 text-3xl font-black">{q.count}</div>
             <div className="mt-1 flex items-center justify-between text-sm text-(--sub-text)">
@@ -82,6 +90,30 @@ export default async function AdminDashboard() {
                   </span>
                 </div>
                 <StatusPill status="PENDING" />
+                <Link href={`/admin/events/${e.id}`} className="rounded border border-(--border-strong) px-3 py-1.5 text-xs font-bold hover:border-(--primary)">
+                  Review
+                </Link>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {unpublishAsked.length > 0 ? (
+        <>
+          <h2 className="mb-4 text-lg font-bold">Asked to come off the site</h2>
+          <div className="mb-8 overflow-hidden rounded-xl border border-(--border-strong) bg-(--card-bg)">
+            {unpublishAsked.map((e) => (
+              <div key={e.id} className="flex flex-wrap items-center gap-4 border-b border-(--border-strong) px-5 py-4 last:border-0">
+                <div className="min-w-0 flex-1">
+                  <b className="block text-sm">{e.title}</b>
+                  <span className="text-xs text-(--sub-text)">
+                    {e.startsAt.toLocaleDateString("en-GB")}
+                    {e.city || e.venue ? ` · ${[e.city, e.venue].filter(Boolean).join(", ")}` : ""}
+                  </span>
+                  {e.unpublishNote ? <span className="mt-1 block line-clamp-2 text-xs text-(--sub-text)">{e.unpublishNote}</span> : null}
+                </div>
+                <StatusPill status="PUBLISHED" />
                 <Link href={`/admin/events/${e.id}`} className="rounded border border-(--border-strong) px-3 py-1.5 text-xs font-bold hover:border-(--primary)">
                   Review
                 </Link>

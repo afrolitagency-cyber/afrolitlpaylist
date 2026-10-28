@@ -5,6 +5,7 @@ import { saveEpisode } from "@/lib/actions/episodes";
 import type { ActionState } from "@/lib/actions/_result";
 import { UploadField } from "@/components/ui/UploadField";
 import { CoverImageField } from "@/components/admin/CoverImageField";
+import { Opt, Req } from "@/components/admin/FieldMarks";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -36,34 +37,34 @@ export function EpisodeForm({ values }: { values: EpisodeValues }) {
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <div className="mb-4">
-            <label className={label} htmlFor="title">Episode title</label>
+            <label className={label} htmlFor="title">Episode title<Req /></label>
             <input id="title" name="title" required defaultValue={values.title} className={field} />
           </div>
           <div className="mb-4 grid gap-4 sm:grid-cols-3">
             <div>
-              <label className={label} htmlFor="slug">Slug</label>
+              <label className={label} htmlFor="slug">Slug<Opt /></label>
               <input id="slug" name="slug" defaultValue={values.slug} className={field} />
             </div>
             <div>
-              <label className={label} htmlFor="season">Season</label>
+              <label className={label} htmlFor="season">Season<Opt /></label>
               <input id="season" name="season" type="number" min={1} defaultValue={values.season} className={field} />
             </div>
             <div>
-              <label className={label} htmlFor="number">Number</label>
+              <label className={label} htmlFor="number">Number<Opt /></label>
               <input id="number" name="number" type="number" min={1} defaultValue={values.number} className={field} />
             </div>
           </div>
           <div>
-            <label className={label} htmlFor="excerpt">Excerpt</label>
+            <label className={label} htmlFor="excerpt">Excerpt<Opt /></label>
             <textarea id="excerpt" name="excerpt" rows={3} defaultValue={values.excerpt} className={field} />
           </div>
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
-          <UploadField name="audioUrl" label="Audio file" kind="audio" defaultValue={values.audioUrl}
-            hint="mp3 or m4a. Large files upload straight to storage, not through the server." />
+          <UploadField name="audioUrl" label="Audio file" kind="audio" optional defaultValue={values.audioUrl}
+            hint="Required before publishing. mp3 or m4a. A draft can be saved without a file." />
           <div className="mt-4">
-            <label className={label} htmlFor="durationSec">Duration (seconds)</label>
+            <label className={label} htmlFor="durationSec">Duration (seconds)<Opt /></label>
             <input id="durationSec" name="durationSec" type="number" min={1} defaultValue={values.durationSec} className={field} />
           </div>
         </div>
@@ -73,7 +74,7 @@ export function EpisodeForm({ values }: { values: EpisodeValues }) {
           <div className="grid gap-4 sm:grid-cols-3">
             {([["spotifyUrl", "Spotify"], ["appleUrl", "Apple Podcasts"], ["youtubeUrl", "YouTube"]] as const).map(([n, l]) => (
               <div key={n}>
-                <label className={label} htmlFor={n}>{l}</label>
+                <label className={label} htmlFor={n}>{l}<Opt /></label>
                 <input id={n} name={n} defaultValue={values[n]} placeholder="https://" className={field} />
               </div>
             ))}

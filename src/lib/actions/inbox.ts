@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireRole, requireRoleFresh, can } from "@/lib/rbac";
 import { upsertSubscribers } from "@/lib/newsletter-subscribe";
 import { runAction, type ActionState } from "./_result";
 
@@ -11,7 +11,7 @@ type Status = (typeof STATUSES)[number];
 
 export async function updateMessage(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    const user = await requireRole(...can.moderate);
+    const user = await requireRoleFresh(...can.viewInbox);
     const id = String(formData.get("id") ?? "");
     const status = String(formData.get("status") ?? "");
     const assign = formData.get("assignToMe") === "on";

@@ -7,6 +7,7 @@ import type { ActionState } from "@/lib/actions/_result";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { GENRES } from "@/lib/genres";
 import { PLATFORMS } from "@/lib/album-platforms";
+import { Opt, Req } from "@/components/admin/FieldMarks";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -69,28 +70,28 @@ export function AlbumForm({
             <p className="mb-4 text-xs text-(--sub-text)">Shown on the homepage, the chart and the album page.</p>
             <div className="mb-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={label} htmlFor="title">Album title <span className="text-(--primary)">*</span></label>
+                <label className={label} htmlFor="title">Album title<Req /></label>
                 <input id="title" name="title" required defaultValue={values.title} className={field} />
               </div>
               <div>
-                <label className={label} htmlFor="artistName">Artist <span className="text-(--primary)">*</span></label>
+                <label className={label} htmlFor="artistName">Artist<Req /></label>
                 <input id="artistName" name="artistName" required defaultValue={values.artistName} className={field} />
               </div>
             </div>
             <div className="mb-4 grid gap-4 sm:grid-cols-3">
               <div>
-                <label className={label} htmlFor="releaseYear">Release year</label>
+                <label className={label} htmlFor="releaseYear">Release year<Opt /></label>
                 <input id="releaseYear" name="releaseYear" inputMode="numeric" defaultValue={values.releaseYear} className={field} />
               </div>
               <div>
-                <label className={label} htmlFor="genre">Genre</label>
+                <label className={label} htmlFor="genre">Genre<Opt /></label>
                 <select id="genre" name="genre" defaultValue={values.genre} className={field}>
                   <option value="">—</option>
                   {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
               <div>
-                <label className={label} htmlFor="artistId">Artist profile</label>
+                <label className={label} htmlFor="artistId">Artist profile<Opt /></label>
                 <select id="artistId" name="artistId" defaultValue={values.artistId} className={field}>
                   <option value="">Not on the site</option>
                   {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -98,17 +99,17 @@ export function AlbumForm({
               </div>
             </div>
             <div className="mb-4">
-              <label className={label} htmlFor="summary">Short description</label>
+              <label className={label} htmlFor="summary">Short description<Opt /></label>
               <input id="summary" name="summary" maxLength={240} defaultValue={values.summary}
                 placeholder="One line for search results and sharing" className={field} />
             </div>
             <div className="mb-4">
-              <label className={label} htmlFor="about">About this album</label>
+              <label className={label} htmlFor="about">About this album<Opt /></label>
               <textarea id="about" name="about" rows={5} defaultValue={values.about}
                 placeholder="Why it matters, the sound, the story…" className={field} />
             </div>
             <div>
-              <label className={label} htmlFor="tracks">Tracklist</label>
+              <label className={label} htmlFor="tracks">Tracklist<Opt /></label>
               <textarea id="tracks" name="tracks" rows={8} defaultValue={values.tracks}
                 placeholder="One track per line" className={field} />
               <p className="mt-1.5 text-xs text-(--sub-text)">One song per line. Order is kept.</p>
@@ -140,11 +141,11 @@ export function AlbumForm({
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className={label} htmlFor="rank">Chart position</label>
+                <label className={label} htmlFor="rank">Chart position<Req /></label>
                 <input id="rank" name="rank" type="number" min={1} max={999} required defaultValue={values.rank} className={field} />
               </div>
               <div>
-                <label className={label} htmlFor="movement">Movement vs last week</label>
+                <label className={label} htmlFor="movement">Movement vs last week<Opt /></label>
                 <input id="movement" name="movement" type="number" min={-99} max={99} defaultValue={values.movement}
                   placeholder="2 or -1" className={field} />
                 <p className="mt-1.5 text-xs text-(--sub-text)">Positive moves up, negative moves down, 0 shows a dash.</p>
@@ -167,7 +168,7 @@ export function AlbumForm({
             </p>
             {PLATFORMS.map((p) => (
               <div key={p.key} className="mb-3 last:mb-0">
-                <label className={label} htmlFor={`link_${p.key}`}>{p.label}</label>
+                <label className={label} htmlFor={`link_${p.key}`}>{p.label}<Opt /></label>
                 <input id={`link_${p.key}`} name={`link_${p.key}`} defaultValue={values.links[p.key] ?? ""}
                   placeholder="https://…" className={field} />
               </div>

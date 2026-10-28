@@ -31,7 +31,7 @@ const num = (v: FormDataEntryValue | null) => (v ? Number(v) : null);
 
 export async function saveEpisode(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return runAction(async () => {
-    const publishing = formData.get("status") === "PUBLISHED";
+    const publishing = formData.get("status") === "PUBLISHED" || formData.get("status") === "SCHEDULED";
     if (publishing) await requireRoleFresh(...can.manageContent);
     else await requireRole(...can.manageContent);
 
@@ -53,6 +53,9 @@ export async function saveEpisode(_prev: ActionState, formData: FormData): Promi
       featured: formData.get("featured") === "on",
       commentsOn: formData.get("commentsOn") !== "off",
     });
+    if ((data.status === "PUBLISHED" || data.status === "SCHEDULED") && !data.audioUrl) {
+      return { ok: false, error: "Add an audio file before publishing this episode. A draft can be saved without one." };
+    }
 
     const slug = await uniqueSlug("episode", data.slug || data.title, data.id);
     const { id, ...rest } = data;
@@ -67,6 +70,6 @@ export async function saveEpisode(_prev: ActionState, formData: FormData): Promi
 
     revalidatePath("/admin/episodes");
     revalidatePath("/episodes");
-    return { ok: true, message: publishing ? "Episode published." : "Episode saved." };
+    return { ok: true, message: data.status === "PUBLISHED" ? "Episode published." : "Episode saved." };
   });
 }

@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { saveSeries } from "@/lib/actions/events";
+import { Opt, Req } from "@/components/admin/FieldMarks";
 import type { ActionState } from "@/lib/actions/_result";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
@@ -53,15 +54,15 @@ export function SeriesManager({ series }: { series: SeriesItem[] }) {
         ) : null}
 
         <div className="mb-4">
-          <label className={label} htmlFor="name">Series name</label>
+          <label className={label} htmlFor="name">Series name<Req /></label>
           <input id="name" name="name" required defaultValue={editing?.name ?? ""} className={field} />
         </div>
         <div className="mb-4">
-          <label className={label} htmlFor="slug">Slug</label>
+          <label className={label} htmlFor="slug">Slug<Opt /></label>
           <input id="slug" name="slug" defaultValue={editing?.slug ?? ""} className={field} />
         </div>
         <div className="mb-4">
-          <label className={label} htmlFor="description">Description</label>
+          <label className={label} htmlFor="description">Description<Opt /></label>
           <textarea id="description" name="description" rows={3} defaultValue={editing?.description ?? ""} className={field} />
         </div>
         <label className="mb-4 flex items-center justify-between py-2 text-sm">

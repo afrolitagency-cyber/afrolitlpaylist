@@ -9,6 +9,15 @@ import { slugify, uniqueSlug } from "@/lib/services/slug";
 import { runAction, type ActionState } from "./_result";
 import type { Prisma } from "@prisma/client";
 
+function blockHasText(node: unknown): boolean {
+  if (!node || typeof node !== "object") return false;
+  if (Array.isArray(node)) return node.some(blockHasText);
+  const block = node as { text?: unknown; content?: unknown; type?: string; props?: { url?: string } };
+  if (typeof block.text === "string" && block.text.trim()) return true;
+  if (block.type === "image" && block.props?.url) return true;
+  return block.content ? blockHasText(block.content) : false;
+}
+
 function parse(formData: FormData) {
   const title = String(formData.get("title") ?? "");
   const typedSlug = String(formData.get("slug") ?? "").trim();
@@ -40,6 +49,9 @@ export async function savePost(_prev: ActionState, formData: FormData): Promise<
       : await requireRole(...can.manageContent);
 
     const data = parse(formData);
+    if ((data.status === "PUBLISHED" || data.status === "SCHEDULED") && !blockHasText(data.body)) {
+      return { ok: false, error: "Write the post before publishing it. A draft can be empty." };
+    }
     const slug = await uniqueSlug("post", data.slug || data.title, id || undefined);
 
     const payload = {

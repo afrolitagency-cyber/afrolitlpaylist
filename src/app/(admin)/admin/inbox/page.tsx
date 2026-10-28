@@ -1,12 +1,19 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole, can } from "@/lib/rbac";
+import { requireRoleFresh, can, AuthError } from "@/lib/rbac";
 import { AdminShell } from "@/components/admin/Shell";
 import { InboxView, type Message } from "@/components/admin/InboxView";
 
 export const dynamic = "force-dynamic";
 
 export default async function InboxPage() {
-  const user = await requireRole(...can.moderate);
+  let user;
+  try {
+    user = await requireRoleFresh(...can.viewInbox);
+  } catch (err) {
+    if (err instanceof AuthError) redirect(err.code === "UNAUTHENTICATED" ? "/admin/login" : "/admin");
+    throw err;
+  }
 
   const rows = await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
 

@@ -383,6 +383,8 @@ model Event {
   status      ContentStatus @default(DRAFT)
   /// Set when an admin sends the event back to the editor.
   reviewNote  String?       @db.Text
+  /// Editor asked for a live event to come off the site. It stays published until an admin agrees.
+  unpublishNote String?     @db.Text
 
   seriesId String?
   series   EventSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)

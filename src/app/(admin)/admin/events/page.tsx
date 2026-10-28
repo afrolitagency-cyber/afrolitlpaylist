@@ -16,7 +16,8 @@ export default async function AdminEvents() {
 
   const upcoming = events.filter((e: { startsAt: Date }) => e.startsAt.getTime() >= Date.now()).length;
   const pending = events.filter((e: { status: string }) => e.status === "PENDING");
-  const rest = events.filter((e: { status: string }) => e.status !== "PENDING");
+  const unpublish = events.filter((e: { status: string; unpublishNote: string | null }) => e.status === "PUBLISHED" && e.unpublishNote);
+  const rest = events.filter((e: { status: string; unpublishNote: string | null }) => e.status !== "PENDING" && !(e.status === "PUBLISHED" && e.unpublishNote));
 
   return (
     <AdminShell role={user.role} email={user.email} title="Events" subtitle="Shows, listings and registrations"
@@ -26,9 +27,10 @@ export default async function AdminEvents() {
           <Link href="/admin/events/new" className="rounded bg-(--primary) px-4 py-2 text-sm font-semibold text-white">+ New event</Link>
         </>
       }>
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {[
           { label: "Waiting for approval", value: pending.length },
+          { label: "Asked to come off", value: unpublish.length },
           { label: "Upcoming", value: upcoming },
           { label: "Total events", value: events.length },
           { label: "Registrations", value: events.reduce((n: number, e: { _count: { registrations: number } }) => n + e._count.registrations, 0) },
@@ -44,6 +46,15 @@ export default async function AdminEvents() {
         <div className="mb-5 overflow-hidden rounded-xl border border-amber-500/40 bg-(--card-bg)">
           <h2 className="border-b border-(--border-strong) px-5 py-3 text-sm font-bold">Waiting for approval</h2>
           {pending.map((e) => (
+            <EventRow key={e.id} event={e} />
+          ))}
+        </div>
+      ) : null}
+
+      {unpublish.length > 0 ? (
+        <div className="mb-5 overflow-hidden rounded-xl border border-amber-500/40 bg-(--card-bg)">
+          <h2 className="border-b border-(--border-strong) px-5 py-3 text-sm font-bold">Asked to come off the site</h2>
+          {unpublish.map((e) => (
             <EventRow key={e.id} event={e} />
           ))}
         </div>
@@ -71,6 +82,7 @@ function EventRow({
     status: string;
     soldOut: boolean;
     reviewNote: string | null;
+    unpublishNote: string | null;
     series: { name: string } | null;
     _count: { registrations: number };
   };
@@ -83,6 +95,7 @@ function EventRow({
           {event.startsAt.toLocaleDateString("en-GB")} · {event.venue ?? "—"}
           {event.series ? ` · ${event.series.name}` : ""}
           {event.reviewNote ? " · sent back" : ""}
+          {event.unpublishNote ? " · asked to come off" : ""}
         </span>
       </div>
       <span className="hidden text-xs text-(--sub-text) md:block">

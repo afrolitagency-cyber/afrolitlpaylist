@@ -7,13 +7,14 @@ import { redirect } from "next/navigation";
 // and both bundlers treat it identically.
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
-import { requireRole, AuthError, can } from "@/lib/rbac";
+import { requireRole, signOutIfStale, AuthError, can } from "@/lib/rbac";
 
 /** Guards the whole group. Individual actions still re-check — a layout guard
  *  protects rendering, never mutations. */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = (await headers()).get("x-pathname") ?? "";
   if (pathname === "/admin/login" || pathname.startsWith("/admin/login/")) {
+    await signOutIfStale();
     return <>{children}</>;
   }
 

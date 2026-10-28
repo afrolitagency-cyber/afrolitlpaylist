@@ -5,6 +5,7 @@ import Image from "next/image";
 import { saveGalleryImage, deleteGalleryImage } from "@/lib/actions/media";
 import type { ActionState } from "@/lib/actions/_result";
 import { CoverImageField } from "@/components/admin/CoverImageField";
+import { Opt } from "@/components/admin/FieldMarks";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -75,26 +76,26 @@ export function GalleryManager({
           hint="Published images appear in the public grid." />
 
         <div className="mt-4">
-          <label className={label} htmlFor="caption">Caption</label>
+          <label className={label} htmlFor="caption">Caption<Opt /></label>
           <input id="caption" name="caption" defaultValue={selected?.caption ?? ""} className={field} />
         </div>
         <div className="mt-4">
-          <label className={label} htmlFor="credit">Credit</label>
+          <label className={label} htmlFor="credit">Credit<Opt /></label>
           <input id="credit" name="credit" defaultValue={selected?.credit ?? ""} className={field} />
         </div>
         <div className="mt-4">
-          <label className={label} htmlFor="altText">Alt text</label>
+          <label className={label} htmlFor="altText">Alt text<Opt /></label>
           <textarea id="altText" name="altText" rows={2} defaultValue={selected?.altText ?? ""} className={field} />
         </div>
         <div className="mt-4">
-          <label className={label} htmlFor="collectionId">Collection</label>
+          <label className={label} htmlFor="collectionId">Collection<Opt /></label>
           <select id="collectionId" name="collectionId" defaultValue={selected?.collectionId ?? ""} className={field}>
             <option value="">— none —</option>
             {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div className="mt-4">
-          <label className={label} htmlFor="eventId">Linked event</label>
+          <label className={label} htmlFor="eventId">Linked event<Opt /></label>
           <select id="eventId" name="eventId" defaultValue={selected?.eventId ?? ""} className={field}>
             <option value="">— none —</option>
             {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}

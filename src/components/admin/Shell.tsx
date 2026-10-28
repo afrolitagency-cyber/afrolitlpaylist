@@ -44,8 +44,8 @@ const NAV: Item[] = [
   { label: "Episodes", href: "/admin/episodes", icon: "episodes" },
   { label: "Gallery", href: "/admin/gallery", icon: "gallery" },
   { label: "Newsletter", href: "/admin/newsletter", icon: "newsletter", roles: ["SUPERADMIN", "ADMIN"] },
-  { label: "Contact inbox", href: "/admin/inbox", icon: "inbox" },
-  { label: "Analytics", href: "/admin/analytics", icon: "analytics" },
+  { label: "Contact inbox", href: "/admin/inbox", icon: "inbox", roles: ["SUPERADMIN", "ADMIN"] },
+  { label: "Analytics", href: "/admin/analytics", icon: "analytics", roles: ["SUPERADMIN", "ADMIN"] },
   { label: "Media library", href: "/admin/media", icon: "media" },
   { label: "Ads", href: "/admin/ads", icon: "ads", roles: ["SUPERADMIN", "ADMIN"] },
   { label: "Categories", href: "/admin/taxonomy", icon: "categories" },
@@ -216,7 +216,7 @@ function NavIcon({ name }: { name: IconName }) {
 
 /** The sidebar hides what the role cannot use — but hiding is cosmetic only.
  *  Enforcement lives in requireRole(); the menu is never the gate.
- *  The role is read from the database so a promotion shows up before the JWT refreshes. */
+ *  The role shown here is the database role. A sign-in that disagrees is ended before this renders. */
 export async function AdminShell({
   role: roleProp,
   email,
@@ -261,7 +261,7 @@ export async function AdminShell({
               AFRO<em className="not-italic text-(--primary)">LIT</em>PLAYLIST
             </b>
             <span className="text-[10.5px] font-semibold tracking-wider text-white/70">
-              {role === "SUPERADMIN" ? "SUPERADMIN" : "ADMIN CMS"}
+              {role === "SUPERADMIN" ? "SUPERADMIN" : role === "EDITOR" ? "EDITOR CMS" : role === "DOOR" ? "DOOR" : "ADMIN CMS"}
             </span>
           </div>
         </div>

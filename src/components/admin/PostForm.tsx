@@ -6,6 +6,7 @@ import { savePost } from "@/lib/actions/posts";
 import type { ActionState } from "@/lib/actions/_result";
 import { BlockEditor } from "./BlockEditor";
 import { CoverImageField } from "./CoverImageField";
+import { Opt, Req } from "@/components/admin/FieldMarks";
 
 type Option = { id: string; name: string };
 
@@ -68,23 +69,23 @@ export function PostForm({
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <div className="mb-4">
-            <label className={label} htmlFor="title">Title</label>
+            <label className={label} htmlFor="title">Title<Req /></label>
             <input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} required className={field} />
           </div>
           <div className="mb-4">
-            <label className={label} htmlFor="slug">
-              Slug <span className="font-normal text-(--sub-text)">— leave blank to generate from the title</span>
-            </label>
+            <label className={label} htmlFor="slug">Slug<Opt /></label>
             <input id="slug" name="slug" value={slug} onChange={(e) => setSlug(e.target.value)} className={field} />
+            <p className="mt-1.5 text-xs text-(--sub-text)">Leave blank to generate from the title.</p>
           </div>
           <div>
-            <label className={label} htmlFor="excerpt">Excerpt</label>
+            <label className={label} htmlFor="excerpt">Excerpt<Opt /></label>
             <textarea id="excerpt" name="excerpt" rows={3} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} className={field} />
           </div>
         </div>
 
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
-          <label className={label}>Body</label>
+          <label className={label}>Body<Opt /></label>
+          <p className="mb-2 text-xs text-(--sub-text)">Required before publishing. A draft can be empty.</p>
           <BlockEditor name="body" initialContent={values.body} />
         </div>
       </div>
@@ -123,23 +124,21 @@ export function PostForm({
         <div className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
           <h3 className="mb-4 text-[15px] font-bold">Organise</h3>
           <div className="mb-4">
-            <label className={label} htmlFor="categoryId">Category</label>
+            <label className={label} htmlFor="categoryId">Category<Opt /></label>
             <select id="categoryId" name="categoryId" defaultValue={values.categoryId} className={field}>
               <option value="">— none —</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div className="mb-4">
-            <label className={label} htmlFor="artistId">
-              Link to artist <span className="font-normal text-(--sub-text)">— shows on their page</span>
-            </label>
+            <label className={label} htmlFor="artistId">Link to artist<Opt /></label>
             <select id="artistId" name="artistId" defaultValue={values.artistId} className={field}>
               <option value="">— none —</option>
               {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
           <div className="mb-4">
-            <label className={label} htmlFor="tags">Tags</label>
+            <label className={label} htmlFor="tags">Tags<Opt /></label>
             <input id="tags" name="tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" className={field} />
           </div>
           <CoverImageField defaultValue={values.coverImage} />

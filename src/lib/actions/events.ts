@@ -31,6 +31,11 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
       status = "DRAFT";
     }
 
+    const goingLive = status === "PENDING" || status === "SCHEDULED" || status === "PUBLISHED";
+    if (goingLive && !String(formData.get("venue") ?? "").trim()) {
+      return { ok: false, error: "Add a venue before this event can be reviewed or published." };
+    }
+
     const scheduleLines = String(formData.get("schedule") ?? "")
       .split("\n")
       .map((line) => line.trim())
@@ -85,7 +90,7 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
           data: {
             ...rest,
             slug,
-            ...(status === "PUBLISHED" ? { reviewNote: null } : {}),
+            ...(status === "PUBLISHED" ? { reviewNote: null } : { unpublishNote: null }),
             lineup: { set: lineup },
             series: seriesId ? { connect: { id: seriesId } } : { disconnect: true },
             presentedByArtist: presentedByArtistId
@@ -97,7 +102,7 @@ export async function saveEvent(_prev: ActionState, formData: FormData): Promise
           data: {
             ...rest,
             slug,
-            ...(status === "PUBLISHED" ? { reviewNote: null } : {}),
+            ...(status === "PUBLISHED" ? { reviewNote: null } : { unpublishNote: null }),
             lineup: { connect: lineup },
             ...(seriesId ? { series: { connect: { id: seriesId } } } : {}),
             ...(presentedByArtistId
@@ -169,10 +174,11 @@ export async function reviewEvent(_prev: ActionState, formData: FormData): Promi
     await requireRoleFresh("SUPERADMIN", "ADMIN");
     const id = String(formData.get("id") ?? "");
     const decision = String(formData.get("decision") ?? "");
-    const event = await prisma.event.findUnique({ where: { id }, select: { id: true, slug: true, seriesId: true } });
+    const event = await prisma.event.findUnique({ where: { id }, select: { id: true, slug: true, seriesId: true, venue: true } });
     if (!event) return { ok: false, error: "That event no longer exists." };
 
     if (decision === "approve") {
+      if (!event.venue?.trim()) return { ok: false, error: "Add a venue before publishing this event." };
       await prisma.event.update({ where: { id }, data: { status: "PUBLISHED", reviewNote: null } });
     } else if (decision === "return") {
       const note = String(formData.get("reviewNote") ?? "").trim();
@@ -189,5 +195,75 @@ export async function reviewEvent(_prev: ActionState, formData: FormData): Promi
     revalidatePath(`/events/${event.slug}`);
     if (event.seriesId) revalidatePath("/", "layout");
     return { ok: true, message: decision === "approve" ? "Event published." : "Sent back to the editor." };
+  });
+}
+
+export async function requestUnpublish(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const actor = await requireRoleFresh(...can.manageContent);
+    if (actor.role !== "EDITOR") {
+      return { ok: false, error: "An admin can take this event off the site directly." };
+    }
+    const id = String(formData.get("id") ?? "");
+    const event = await prisma.event.findUnique({ where: { id }, select: { id: true, status: true } });
+    if (!event) return { ok: false, error: "That event no longer exists." };
+    if (event.status !== "PUBLISHED") {
+      return { ok: false, error: "Only a live event can be asked to come off the site." };
+    }
+
+    const intent = String(formData.get("intent") ?? "");
+    if (intent === "cancel") {
+      await prisma.event.update({ where: { id }, data: { unpublishNote: null } });
+      revalidatePath("/admin");
+      revalidatePath("/admin/events");
+      revalidatePath(`/admin/events/${id}`);
+      return { ok: true, message: "Request cancelled. The event stays live." };
+    }
+
+    const note = String(formData.get("unpublishNote") ?? "").trim();
+    if (note.length < 3) return { ok: false, error: "Say why it should come off the site." };
+    if (note.length > 1000) return { ok: false, error: "Keep the note under 1000 characters." };
+    await prisma.event.update({ where: { id }, data: { unpublishNote: note } });
+    revalidatePath("/admin");
+    revalidatePath("/admin/events");
+    revalidatePath(`/admin/events/${id}`);
+    return { ok: true, message: "Asked an admin to take this off the site. It stays live until they agree." };
+  });
+}
+
+export async function resolveUnpublish(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await requireRoleFresh("SUPERADMIN", "ADMIN");
+    const id = String(formData.get("id") ?? "");
+    const decision = String(formData.get("decision") ?? "");
+    const event = await prisma.event.findUnique({
+      where: { id },
+      select: { id: true, slug: true, seriesId: true, status: true, unpublishNote: true },
+    });
+    if (!event) return { ok: false, error: "That event no longer exists." };
+    if (!event.unpublishNote || event.status !== "PUBLISHED") {
+      return { ok: false, error: "There is no request to take this event off the site." };
+    }
+
+    if (decision === "remove") {
+      await prisma.event.update({ where: { id }, data: { status: "DRAFT", unpublishNote: null } });
+    } else if (decision === "keep") {
+      await prisma.event.update({ where: { id }, data: { unpublishNote: null } });
+    } else {
+      return { ok: false, error: "Unknown action." };
+    }
+
+    revalidateTag("events");
+    revalidatePath("/admin");
+    revalidatePath("/admin/events");
+    revalidatePath(`/admin/events/${id}`);
+    revalidatePath("/events");
+    revalidatePath("/");
+    revalidatePath(`/events/${event.slug}`);
+    if (event.seriesId) revalidatePath("/", "layout");
+    return {
+      ok: true,
+      message: decision === "remove" ? "Taken off the site. It is a draft now." : "It stays live.",
+    };
   });
 }

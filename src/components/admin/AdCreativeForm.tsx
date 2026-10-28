@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { saveAdCreative, deleteAdCreative } from "@/lib/actions/ads";
 import type { ActionState } from "@/lib/actions/_result";
 import { CoverImageField } from "@/components/admin/CoverImageField";
+import { Opt, Req } from "@/components/admin/FieldMarks";
 import type { AdPlacement } from "@prisma/client";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
@@ -74,11 +75,11 @@ export function AdCreativeForm({
 
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={label} htmlFor={`name-${creative?.id ?? "new"}`}>Name</label>
+          <label className={label} htmlFor={`name-${creative?.id ?? "new"}`}>Name<Req /></label>
           <input id={`name-${creative?.id ?? "new"}`} name="name" required defaultValue={creative?.name ?? ""} className={field} />
         </div>
         <div>
-          <label className={label} htmlFor={`adv-${creative?.id ?? "new"}`}>Advertiser</label>
+          <label className={label} htmlFor={`adv-${creative?.id ?? "new"}`}>Advertiser<Opt /></label>
           <input id={`adv-${creative?.id ?? "new"}`} name="advertiser" defaultValue={creative?.advertiser ?? ""} className={field} />
         </div>
       </div>
@@ -86,11 +87,11 @@ export function AdCreativeForm({
       {native ? (
         <>
           <div className="mb-3">
-            <label className={label} htmlFor={`hl-${creative?.id ?? "new"}`}>Headline</label>
+            <label className={label} htmlFor={`hl-${creative?.id ?? "new"}`}>Headline<Req /></label>
             <input id={`hl-${creative?.id ?? "new"}`} name="headline" required defaultValue={creative?.headline ?? ""} className={field} />
           </div>
           <div className="mb-3">
-            <label className={label} htmlFor={`body-${creative?.id ?? "new"}`}>Teaser</label>
+            <label className={label} htmlFor={`body-${creative?.id ?? "new"}`}>Teaser<Opt /></label>
             <input id={`body-${creative?.id ?? "new"}`} name="body" defaultValue={creative?.body ?? ""} className={field} />
           </div>
           <CoverImageField
@@ -101,7 +102,7 @@ export function AdCreativeForm({
             shape="square"
           />
           <div className="mb-3">
-            <label className={label} htmlFor={`cta-${creative?.id ?? "new"}`}>CTA label</label>
+            <label className={label} htmlFor={`cta-${creative?.id ?? "new"}`}>CTA label<Opt /></label>
             <input id={`cta-${creative?.id ?? "new"}`} name="ctaLabel" defaultValue={creative?.ctaLabel ?? ""} placeholder="Learn more" className={field} />
           </div>
         </>
@@ -113,14 +114,14 @@ export function AdCreativeForm({
             <CoverImageField name="imageUrlMobile" label="Mobile image" defaultValue={creative?.imageUrlMobile ?? ""} hint={mobileHint} />
           </div>
           <div className="mb-3">
-            <label className={label} htmlFor={`alt-${creative?.id ?? "new"}`}>Alt text</label>
+            <label className={label} htmlFor={`alt-${creative?.id ?? "new"}`}>Alt text<Opt /></label>
             <input id={`alt-${creative?.id ?? "new"}`} name="altText" defaultValue={creative?.altText ?? ""} className={field} />
           </div>
         </>
       )}
 
       <div className="mb-3">
-        <label className={label} htmlFor={`click-${creative?.id ?? "new"}`}>Click URL</label>
+        <label className={label} htmlFor={`click-${creative?.id ?? "new"}`}>Click URL<Req /></label>
         <input
           id={`click-${creative?.id ?? "new"}`}
           name="clickUrl"
@@ -137,7 +138,7 @@ export function AdCreativeForm({
         )}
       </div>
       <div className="mb-3">
-        <label className={label} htmlFor={`w-${creative?.id ?? "new"}`}>Weight</label>
+        <label className={label} htmlFor={`w-${creative?.id ?? "new"}`}>Weight<Opt /></label>
         <input id={`w-${creative?.id ?? "new"}`} name="weight" type="number" min={1} max={99} defaultValue={creative?.weight ?? 1} className={field} />
         <p className="mt-1 text-xs text-(--sub-text)">
           Relative share when several creatives are live. Evens out over a day rather than minute to minute.
@@ -145,11 +146,11 @@ export function AdCreativeForm({
       </div>
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={label} htmlFor={`from-${creative?.id ?? "new"}`}>Starts</label>
+          <label className={label} htmlFor={`from-${creative?.id ?? "new"}`}>Starts<Opt /></label>
           <input id={`from-${creative?.id ?? "new"}`} name="startsAt" type="datetime-local" defaultValue={forInput(creative?.startsAt)} className={field} />
         </div>
         <div>
-          <label className={label} htmlFor={`to-${creative?.id ?? "new"}`}>Ends</label>
+          <label className={label} htmlFor={`to-${creative?.id ?? "new"}`}>Ends<Opt /></label>
           <input id={`to-${creative?.id ?? "new"}`} name="endsAt" type="datetime-local" defaultValue={forInput(creative?.endsAt)} className={field} />
         </div>
       </div>

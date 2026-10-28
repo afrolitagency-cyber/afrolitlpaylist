@@ -23,11 +23,13 @@ export function UsersTable({
   actorRole,
   assignable,
   canInviteArtists,
+  soleSuperadmin,
 }: {
   users: UserRow[];
   actorRole: string;
   assignable: string[];
   canInviteArtists: boolean;
+  soleSuperadmin: boolean;
 }) {
   const [inviteState, invite, inviting] = useActionState<ActionState, FormData>(inviteUser, null);
   const [updateState, update] = useActionState<ActionState, FormData>(updateUser, null);
@@ -67,7 +69,10 @@ export function UsersTable({
       </form>
 
       <div className="overflow-hidden rounded-xl border border-(--border-strong) bg-(--card-bg)">
-        {users.map((u) => (
+        {users.map((u) => {
+          const roleLocked = soleSuperadmin && u.role === "SUPERADMIN";
+          const suspendLocked = roleLocked && u.status === "ACTIVE";
+          return (
           <div key={u.id} className="flex flex-wrap items-center gap-4 border-b border-(--border-strong) px-5 py-3.5 last:border-0">
             <div className="min-w-0 flex-1">
               <b className="block truncate text-sm">{u.name || u.email}</b>
@@ -75,7 +80,7 @@ export function UsersTable({
             </div>
             <span className="text-xs text-(--sub-text)">{u.lastActive}</span>
 
-            {u.isSelf || !assignable.includes(u.role) ? (
+            {u.isSelf || !assignable.includes(u.role) || roleLocked ? (
               <span className="rounded-full bg-(--surface-alt) px-2.5 py-1 text-[11.5px] font-bold text-(--sub-text)">
                 {ROLE_LABEL[u.role] ?? u.role}{u.isSelf ? " · you" : ""}
                 {u.role === "ADMIN" && u.artistAccess ? " · artists" : ""}
@@ -104,7 +109,7 @@ export function UsersTable({
               </form>
             ) : null}
 
-            {!u.isSelf && (actorRole === "SUPERADMIN" || assignable.includes(u.role)) ? (
+            {!u.isSelf && !suspendLocked && (actorRole === "SUPERADMIN" || assignable.includes(u.role)) ? (
               <form action={update}>
                 <input type="hidden" name="id" value={u.id} />
                 <input type="hidden" name="action" value={u.status === "SUSPENDED" ? "activate" : "suspend"} />
@@ -113,8 +118,35 @@ export function UsersTable({
                 </button>
               </form>
             ) : null}
+
+            {!u.isSelf && !roleLocked && (actorRole === "SUPERADMIN" || assignable.includes(u.role)) ? (
+              <form
+                action={update}
+                onSubmit={(event) => {
+                  const ok = window.confirm(
+                    `Delete the login for ${u.email}? Their posts and artist page stay on the site. They cannot sign in again.`,
+                  );
+                  if (!ok) event.preventDefault();
+                }}
+              >
+                <input type="hidden" name="id" value={u.id} />
+                <input type="hidden" name="action" value="delete" />
+                <button type="submit" className="rounded border border-(--primary)/40 px-3 py-2 text-xs font-bold text-(--primary)">
+                  Delete
+                </button>
+              </form>
+            ) : null}
+
+            {roleLocked && actorRole === "SUPERADMIN" ? (
+              <p className="basis-full text-xs text-(--sub-text)">
+                {u.status === "ACTIVE"
+                  ? "Last superadmin. Promote someone else before this account can change."
+                  : "Promote another superadmin before this role can change."}
+              </p>
+            ) : null}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
