@@ -14,19 +14,27 @@ export default async function AdminDashboard() {
   });
   const artistAccess = fresh?.role === "SUPERADMIN" || (fresh?.role === "ADMIN" && Boolean(fresh.artistAccess));
 
-  const [pendingArtists, pendingComments, drafts, submissions] = await Promise.all([
+  const [pendingArtists, pendingComments, drafts, pendingEvents, submissions, eventsWaiting] = await Promise.all([
     prisma.artist.count({ where: { status: "PENDING" } }),
     prisma.comment.count({ where: { status: "PENDING" } }),
     prisma.post.count({ where: { status: "DRAFT" } }),
+    prisma.event.count({ where: { status: "PENDING" } }),
     prisma.artist.findMany({
       where: { status: { in: ["PENDING", "CHANGES_REQUESTED"] } },
       orderBy: { submittedAt: "desc" },
       take: 6,
       select: { id: true, name: true, genre: true, status: true, submittedAt: true },
     }),
+    prisma.event.findMany({
+      where: { status: "PENDING" },
+      orderBy: { updatedAt: "desc" },
+      take: 6,
+      select: { id: true, title: true, startsAt: true, city: true, venue: true },
+    }),
   ]);
 
   const queues = [
+    { label: "Events waiting", count: pendingEvents, href: "/admin/events", hint: "Need approval" },
     ...(artistAccess
       ? [{ label: "Artist submissions", count: pendingArtists, href: "/admin/artists?status=PENDING", hint: "Awaiting review" }]
       : []),
@@ -47,7 +55,7 @@ export default async function AdminDashboard() {
       }
     >
       <h2 className="mb-4 text-lg font-bold">Needs your attention</h2>
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {queues.map((q) => (
           <Link key={q.href} href={q.href as Route} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5 hover:border-(--primary)">
             <span className="text-sm font-semibold">{q.label}</span>
@@ -59,6 +67,29 @@ export default async function AdminDashboard() {
           </Link>
         ))}
       </div>
+
+      {eventsWaiting.length > 0 ? (
+        <>
+          <h2 className="mb-4 text-lg font-bold">Events waiting for approval</h2>
+          <div className="mb-8 overflow-hidden rounded-xl border border-(--border-strong) bg-(--card-bg)">
+            {eventsWaiting.map((e) => (
+              <div key={e.id} className="flex flex-wrap items-center gap-4 border-b border-(--border-strong) px-5 py-4 last:border-0">
+                <div className="min-w-0 flex-1">
+                  <b className="block text-sm">{e.title}</b>
+                  <span className="text-xs text-(--sub-text)">
+                    {e.startsAt.toLocaleDateString("en-GB")}
+                    {e.city || e.venue ? ` · ${[e.city, e.venue].filter(Boolean).join(", ")}` : ""}
+                  </span>
+                </div>
+                <StatusPill status="PENDING" />
+                <Link href={`/admin/events/${e.id}`} className="rounded border border-(--border-strong) px-3 py-1.5 text-xs font-bold hover:border-(--primary)">
+                  Review
+                </Link>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       {artistAccess ? (
         <>
