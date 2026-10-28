@@ -257,10 +257,10 @@ export async function AdminShell({
         <div className="flex items-center gap-2.5 border-b border-(--border-strong) p-5">
           <LogoMark size={34} />
           <div>
-            <b className="block text-[15px] font-black">
+            <b className="block text-[15px] font-black text-white">
               AFRO<em className="not-italic text-(--primary)">LIT</em>PLAYLIST
             </b>
-            <span className="text-[10.5px] font-semibold tracking-wider text-(--sub-text)">
+            <span className="text-[10.5px] font-semibold tracking-wider text-white/70">
               {role === "SUPERADMIN" ? "SUPERADMIN" : "ADMIN CMS"}
             </span>
           </div>
@@ -270,7 +270,7 @@ export async function AdminShell({
             <Link
               key={i.href}
               href={i.href as Route}
-              className="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-semibold text-(--sub-text) hover:bg-(--surface-alt) hover:text-(--body-text)"
+              className="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/15 hover:text-white"
             >
               <NavIcon name={i.icon} />
               {i.label}
@@ -278,8 +278,8 @@ export async function AdminShell({
           ))}
         </nav>
         <div className="border-t border-(--border-strong) p-3.5 text-sm">
-          <b className="block truncate">{email}</b>
-          <span className="text-xs capitalize text-(--sub-text)">{role.toLowerCase()}</span>
+          <b className="block truncate text-white">{email}</b>
+          <span className="text-xs capitalize text-white/70">{role.toLowerCase()}</span>
         </div>
       </aside>
 
