@@ -14,7 +14,7 @@ function blockHasText(node: unknown): boolean {
   if (Array.isArray(node)) return node.some(blockHasText);
   const block = node as { text?: unknown; content?: unknown; type?: string; props?: { url?: string } };
   if (typeof block.text === "string" && block.text.trim()) return true;
-  if (block.type === "image" && block.props?.url) return true;
+  if ((block.type === "image" || block.type === "video" || block.type === "embed") && block.props?.url) return true;
   return block.content ? blockHasText(block.content) : false;
 }
 

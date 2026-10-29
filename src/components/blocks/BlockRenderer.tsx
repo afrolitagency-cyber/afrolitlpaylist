@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { inlineText, isBlockArray, prop, type Block, type InlineContent } from "@/lib/blocks";
+import { normalizeEmbedUrl } from "@/lib/embedUrl";
 import {
   AudioPlayerBlock, ReleaseBlock, TracklistBlock, StreamingLinksBlock, ArtistMentionBlock,
 } from "./MusicBlocks";
@@ -30,6 +31,37 @@ function Inline({ content }: { content: Block["content"] }) {
         return <span key={i}>{el}</span>;
       })}
     </>
+  );
+}
+
+/** YouTube, Spotify, and Apple links become a player. A direct video file plays inline. */
+function EmbeddedMedia({ url, caption }: { url: string; caption?: string }) {
+  const embed = normalizeEmbedUrl(url);
+  const file = /^https:\/\//.test(url) && (
+    /\.(mp4|webm|ogg|mov)(?:[?#]|$)/i.test(url) ||
+    /res\.cloudinary\.com\/.+\/video\/upload\//.test(url)
+  );
+  if (!embed && !file) return null;
+
+  const label = caption?.trim() || "Embedded video";
+  return (
+    <figure className="my-7 overflow-hidden rounded-xl">
+      {embed ? (
+        <iframe
+          src={embed}
+          title={label}
+          loading="lazy"
+          className={embed.includes("youtube.com/embed/") ? "aspect-video h-auto w-full border-0" : "h-[352px] w-full border-0"}
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          allowFullScreen
+        />
+      ) : (
+        <video src={url} controls playsInline preload="metadata" className="aspect-video w-full bg-black" />
+      )}
+      {caption?.trim() ? (
+        <figcaption className="mt-2 text-center text-xs text-(--sub-text)">{caption}</figcaption>
+      ) : null}
+    </figure>
   );
 }
 
@@ -91,15 +123,11 @@ function One({ block }: { block: Block }) {
       return <StreamingLinksBlock links={parseJson<{ service: string; url: string }[]>(prop(block, "links"), [])} />;
     case "artistMention":
       return <ArtistMentionBlock name={prop(block, "name")} slug={prop(block, "slug")} avatar={prop(block, "avatar")} />;
+    case "video":
     case "embed": {
       const url = prop(block, "url");
       if (!url) return null;
-      return (
-        <div className="my-7 overflow-hidden rounded-xl">
-          <iframe src={url} title="Embedded media" loading="lazy" className="h-[352px] w-full border-0"
-            allow="encrypted-media; clipboard-write; picture-in-picture" />
-        </div>
-      );
+      return <EmbeddedMedia url={url} caption={prop(block, "caption")} />;
     }
     case "paragraph":
     default: {
