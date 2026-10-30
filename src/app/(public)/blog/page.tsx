@@ -7,6 +7,7 @@ import type { Story } from "@/components/themes/types";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { WidgetSidebar } from "@/components/widgets/Sidebar";
 import { WidgetSkeleton } from "@/components/ui/Skeleton";
+import { CompactPagination } from "@/components/ui/Pagination";
 
 export const revalidate = 300;
 export const metadata = { title: "Blog" };
@@ -82,17 +83,14 @@ export default async function BlogIndex({
 
           <AdSlot placement="IN_FEED_NATIVE" path="/blog" />
 
-          {pages > 1 ? (
-            <nav className="mt-9 flex justify-center gap-2" aria-label="Pagination">
-              {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
-                <Link key={n} href={`/blog?${category ? `category=${category}&` : ""}page=${n}`}
-                  aria-current={n === current ? "page" : undefined}
-                  className={`grid h-10 min-w-10 place-items-center rounded border px-3 font-bold ${n === current ? "border-(--primary) bg-(--primary) text-white" : "border-(--border-strong)"}`}>
-                  {n}
-                </Link>
-              ))}
-            </nav>
-          ) : null}
+          <CompactPagination
+            page={current}
+            pages={pages}
+            total={total}
+            perPage={PER_PAGE}
+            basePath="/blog"
+            params={{ category }}
+          />
         </main>
         <Suspense fallback={<div className="flex flex-col gap-5"><WidgetSkeleton /><WidgetSkeleton /><WidgetSkeleton /></div>}>
           <WidgetSidebar path="/blog" />

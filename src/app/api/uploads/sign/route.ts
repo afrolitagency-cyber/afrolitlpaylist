@@ -6,6 +6,8 @@ import { can } from "@/lib/rbac";
 export const runtime = "nodejs";
 
 const IMAGE = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"];
+/** Stored file is capped at 2000px wide. q_auto:good keeps the picture looking clean. */
+const IMAGE_TRANSFORM = "c_limit,w_2000,q_auto:good";
 const AUDIO = ["audio/mpeg", "audio/mp4", "audio/aac", "audio/wav", "audio/ogg"];
 const MAX_BYTES = { image: 10 * 1024 * 1024, audio: 120 * 1024 * 1024 };
 
@@ -49,15 +51,19 @@ export async function POST(req: Request) {
     const folder =
       session.role === "ARTIST" ? `afrolit/artists/${session.id}` : `afrolit/${type}s`;
     const timestamp = Math.floor(Date.now() / 1000);
+    const transformation = type === "image" ? IMAGE_TRANSFORM : undefined;
 
-    const toSign = `folder=${folder}&timestamp=${timestamp}`;
-    const signature = crypto.createHash("sha1").update(`${toSign}${secret}`).digest("hex");
+    const params = [`folder=${folder}`, `timestamp=${timestamp}`];
+    if (transformation) params.push(`transformation=${transformation}`);
+    params.sort();
+    const signature = crypto.createHash("sha1").update(`${params.join("&")}${secret}`).digest("hex");
 
     return NextResponse.json({
       cloudName: cloud,
       apiKey,
       timestamp,
       folder,
+      transformation,
       signature,
       endpoint: `https://api.cloudinary.com/v1_1/${cloud}/${type === "audio" ? "video" : "image"}/upload`,
     });

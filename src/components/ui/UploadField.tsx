@@ -36,6 +36,7 @@ export function UploadField({ name, label, defaultValue = "", kind = "image", hi
       body.append("api_key", sign.apiKey);
       body.append("timestamp", String(sign.timestamp));
       body.append("folder", sign.folder);
+      if (sign.transformation) body.append("transformation", sign.transformation);
       body.append("signature", sign.signature);
 
       const up = await fetch(sign.endpoint, { method: "POST", body });

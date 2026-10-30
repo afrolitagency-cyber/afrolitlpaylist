@@ -30,6 +30,7 @@ export async function uploadEditorImage(file: File) {
     apiKey?: string;
     timestamp?: number;
     folder?: string;
+    transformation?: string;
     signature?: string;
     endpoint?: string;
   };
@@ -42,6 +43,7 @@ export async function uploadEditorImage(file: File) {
   body.append("api_key", sign.apiKey);
   body.append("timestamp", String(sign.timestamp));
   body.append("folder", sign.folder);
+  if (sign.transformation) body.append("transformation", sign.transformation);
   body.append("signature", sign.signature);
 
   const up = await fetch(sign.endpoint, { method: "POST", body });
