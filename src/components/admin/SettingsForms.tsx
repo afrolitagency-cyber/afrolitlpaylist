@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { setTheme, saveIdentity, saveEmbed } from "@/lib/actions/admin";
+import { setTheme, saveIdentity, saveEmbed, saveListen } from "@/lib/actions/admin";
 import type { ActionState } from "@/lib/actions/_result";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
@@ -83,6 +83,45 @@ export function IdentityForm({
       <button type="submit" disabled={pending}
         className="rounded bg-(--primary) px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
         {pending ? "Saving…" : "Save settings"}
+      </button>
+    </form>
+  );
+}
+
+export function ListenForm({
+  values,
+}: {
+  values: { spotifyLabel: string; spotifyUrl: string; youtubeLabel: string; youtubeUrl: string };
+}) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(saveListen, null);
+
+  return (
+    <form action={action}>
+      <Message state={state} />
+      <p className="mb-4 text-sm text-(--sub-text)">
+        These two players stay in Listen on. Leave an address blank to hide that one. A new address replaces what is live now.
+      </p>
+      <div className="mb-4 grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={label} htmlFor="spotifyLabel">Spotify name</label>
+          <input id="spotifyLabel" name="spotifyLabel" defaultValue={values.spotifyLabel} className={field} />
+        </div>
+        <div>
+          <label className={label} htmlFor="youtubeLabel">YouTube name</label>
+          <input id="youtubeLabel" name="youtubeLabel" defaultValue={values.youtubeLabel} className={field} />
+        </div>
+        <div>
+          <label className={label} htmlFor="spotifyUrl">Spotify address</label>
+          <input id="spotifyUrl" name="spotifyUrl" defaultValue={values.spotifyUrl} placeholder="https://open.spotify.com/…" className={field} />
+        </div>
+        <div>
+          <label className={label} htmlFor="youtubeUrl">YouTube address</label>
+          <input id="youtubeUrl" name="youtubeUrl" defaultValue={values.youtubeUrl} placeholder="https://www.youtube.com/watch?v=…" className={field} />
+        </div>
+      </div>
+      <button type="submit" disabled={pending}
+        className="rounded bg-(--primary) px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+        {pending ? "Saving…" : "Save Listen on"}
       </button>
     </form>
   );

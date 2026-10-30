@@ -98,7 +98,25 @@ export async function WidgetSidebar({ path = "/" }: { path?: string }) {
 
       {listen.length > 0 ? (
         <Widget title="Listen on">
-          {listen.map((l) => (
+          {listen.map((l) => {
+            const player = normalizeEmbedUrl(l.href);
+            if (player) {
+              const video = player.includes("youtube.com/embed/");
+              return (
+                <div key={l.service} className="mb-4 last:mb-0">
+                  <p className="mb-2 text-sm font-bold">{l.label}</p>
+                  <iframe
+                    src={player}
+                    title={l.label}
+                    className={video ? "aspect-video h-auto w-full rounded-lg border-0" : "h-[352px] w-full rounded-lg border-0"}
+                    loading="lazy"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              );
+            }
+            return (
             <TrackedExternalLink key={l.service} href={l.href} name="listen_click" entityId={l.service}
               className="mb-2.5 flex items-center gap-3 rounded-lg border border-(--border-strong) bg-(--input-bg) p-3.5 last:mb-0">
               <span className={`grid size-9 shrink-0 place-items-center rounded-lg text-white ${SERVICE[l.service].bg}`}>
@@ -109,7 +127,8 @@ export async function WidgetSidebar({ path = "/" }: { path?: string }) {
                 <span className="text-xs text-(--sub-text)">{l.sub}</span>
               </span>
             </TrackedExternalLink>
-          ))}
+            );
+          })}
         </Widget>
       ) : null}
 

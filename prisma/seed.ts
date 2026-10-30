@@ -28,8 +28,8 @@ async function main() {
     create: {
       key: "site.listen",
       value: {
-        spotify: "https://open.spotify.com/playlist/afrolit-new-music-friday",
-        youtube: "https://youtube.com/@afrolitplaylist",
+        spotify: "https://open.spotify.com/playlist/6D3KT7tDsgHimO5xWs8a2p",
+        youtube: "https://www.youtube.com/playlist?list=UUuo2AbmfjWHrSGvcOhbV-Dw",
       },
     },
     update: {},

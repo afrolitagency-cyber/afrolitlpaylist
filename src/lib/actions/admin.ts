@@ -116,8 +116,39 @@ export async function saveEmbed(_prev: ActionState, formData: FormData): Promise
       update: { value: { items } },
     });
 
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { ok: true, message: items.length ? "Sidebar players saved." : "Sidebar players removed." };
+  });
+}
+
+export async function saveListen(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await requireRoleFresh(...can.manageSettings);
+    const spotifyLabel = String(formData.get("spotifyLabel") ?? "").trim().slice(0, 80);
+    const youtubeLabel = String(formData.get("youtubeLabel") ?? "").trim().slice(0, 80);
+    const spotifyRaw = String(formData.get("spotifyUrl") ?? "").trim();
+    const youtubeRaw = String(formData.get("youtubeUrl") ?? "").trim();
+
+    const spotify = spotifyRaw ? normalizeEmbedUrl(spotifyRaw) : "";
+    const youtube = youtubeRaw ? normalizeEmbedUrl(youtubeRaw) : "";
+    if (spotifyRaw && (!spotify || !spotify.includes("open.spotify.com"))) {
+      return { ok: false, error: "Spotify needs a playlist, album, or track address." };
+    }
+    if (youtubeRaw && (!youtube || !youtube.includes("youtube.com/embed/"))) {
+      return { ok: false, error: "YouTube needs a video or playlist address." };
+    }
+
+    await prisma.siteSetting.upsert({
+      where: { key: "site.listen" },
+      create: {
+        key: "site.listen",
+        value: { spotify, youtube, spotifyLabel, youtubeLabel },
+      },
+      update: { value: { spotify, youtube, spotifyLabel, youtubeLabel } },
+    });
+
+    revalidatePath("/", "layout");
+    return { ok: true, message: "Listen on saved." };
   });
 }
 

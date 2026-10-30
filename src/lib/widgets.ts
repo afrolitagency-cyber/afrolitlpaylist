@@ -91,13 +91,45 @@ export const getNowPlaying = cache(async (): Promise<NowPlaying> => {
   };
 });
 
-/** "Listen on" comes from site settings, so it is editable without a deploy. */
-export const getListenLinks = cache(async (): Promise<ListenLink[]> => {
-  const row = await prisma.siteSetting.findUnique({ where: { key: "site.listen" } });
-  const value = (row?.value ?? {}) as { spotify?: string; youtube?: string };
+export const LISTEN_DEFAULTS = {
+  spotifyLabel: "AfroLit New Music Friday",
+  youtubeLabel: "AfroLit Sessions",
+  spotifySub: "Spotify playlist",
+  youtubeSub: "YouTube · latest episode",
+} as const;
 
+export type ListenSetting = {
+  spotifyUrl: string;
+  youtubeUrl: string;
+  spotifyLabel: string;
+  youtubeLabel: string;
+};
+
+/** "Listen on" comes from site settings, so it is editable without a deploy. */
+export const getListenSetting = cache(async (): Promise<ListenSetting> => {
+  const row = await prisma.siteSetting.findUnique({ where: { key: "site.listen" } });
+  const value = (row?.value ?? {}) as {
+    spotify?: string;
+    youtube?: string;
+    spotifyLabel?: string;
+    youtubeLabel?: string;
+  };
+  return {
+    spotifyUrl: typeof value.spotify === "string" ? value.spotify : "",
+    youtubeUrl: typeof value.youtube === "string" ? value.youtube : "",
+    spotifyLabel: value.spotifyLabel?.trim() || LISTEN_DEFAULTS.spotifyLabel,
+    youtubeLabel: value.youtubeLabel?.trim() || LISTEN_DEFAULTS.youtubeLabel,
+  };
+});
+
+export const getListenLinks = cache(async (): Promise<ListenLink[]> => {
+  const value = await getListenSetting();
   const links: ListenLink[] = [];
-  if (value.spotify) links.push({ service: "spotify", label: "AfroLit New Music Friday", sub: "Spotify playlist", href: value.spotify });
-  if (value.youtube) links.push({ service: "youtube", label: "AfroLit Sessions", sub: "YouTube · latest episode", href: value.youtube });
+  if (value.spotifyUrl) {
+    links.push({ service: "spotify", label: value.spotifyLabel, sub: LISTEN_DEFAULTS.spotifySub, href: value.spotifyUrl });
+  }
+  if (value.youtubeUrl) {
+    links.push({ service: "youtube", label: value.youtubeLabel, sub: LISTEN_DEFAULTS.youtubeSub, href: value.youtubeUrl });
+  }
   return links;
 });
