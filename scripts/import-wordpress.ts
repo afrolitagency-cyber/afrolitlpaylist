@@ -168,20 +168,23 @@ async function toCloudinary(url: string): Promise<string> {
 
   const up = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, { method: "POST", body });
   const data = (await up.json().catch(() => null)) as { secure_url?: string; public_id?: string; bytes?: number; error?: { message?: string } } | null;
-  if (!data?.secure_url || !data.public_id) {
+  const secureUrl = data?.secure_url;
+  const cloudPublicId = data?.public_id;
+  const storedBytes = data?.bytes ?? null;
+  if (!secureUrl || !cloudPublicId) {
     throw new Error(data?.error?.message || `Cloudinary rejected ${url}`);
   }
 
   await withDb(
     () => prisma.mediaAsset.upsert({
-      where: { publicId: data.public_id },
-      update: { url: data.secure_url, bytes: data.bytes ?? null },
-      create: { url: data.secure_url, publicId: data.public_id, kind: "image", bytes: data.bytes ?? null },
+      where: { publicId: cloudPublicId },
+      update: { url: secureUrl, bytes: storedBytes },
+      create: { url: secureUrl, publicId: cloudPublicId, kind: "image", bytes: storedBytes },
     }),
     "picture record",
   );
-  copied.set(url, data.secure_url);
-  return data.secure_url;
+  copied.set(url, secureUrl);
+  return secureUrl;
 }
 
 async function main() {
