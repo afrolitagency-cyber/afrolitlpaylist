@@ -10,6 +10,8 @@ const config: NextConfig = {
     ];
   },
   images: {
+    // Vercel image optimization is returning 402, so covers load straight from Cloudinary.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "**.supabase.co" },
