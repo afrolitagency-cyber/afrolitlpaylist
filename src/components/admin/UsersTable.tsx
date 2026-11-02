@@ -74,10 +74,20 @@ export function UsersTable({
           const suspendLocked = roleLocked && u.status === "ACTIVE";
           return (
           <div key={u.id} className="flex flex-wrap items-center gap-4 border-b border-(--border-strong) px-5 py-3.5 last:border-0">
-            <div className="min-w-0 flex-1">
-              <b className="block truncate text-sm">{u.name || u.email}</b>
-              <span className="text-xs text-(--sub-text)">{u.email}</span>
-            </div>
+            {actorRole === "SUPERADMIN" ? (
+              <form action={update} className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                <input type="hidden" name="id" value={u.id} />
+                <input type="hidden" name="action" value="details" />
+                <input name="name" defaultValue={u.name} placeholder="Name" aria-label={`Name for ${u.email}`} className={`${field} min-w-36 flex-1`} />
+                <input name="email" type="email" required defaultValue={u.email} aria-label={`Email for ${u.email}`} className={`${field} min-w-48 flex-1`} />
+                <button type="submit" className="rounded border border-(--border-strong) px-3 py-2 text-xs font-bold">Save details</button>
+              </form>
+            ) : (
+              <div className="min-w-0 flex-1">
+                <b className="block truncate text-sm">{u.name || u.email}</b>
+                <span className="text-xs text-(--sub-text)">{u.email}</span>
+              </div>
+            )}
             <span className="text-xs text-(--sub-text)">{u.lastActive}</span>
 
             {u.isSelf || !assignable.includes(u.role) || roleLocked ? (

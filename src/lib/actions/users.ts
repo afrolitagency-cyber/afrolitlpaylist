@@ -41,15 +41,33 @@ export async function updateUser(_prev: ActionState, formData: FormData): Promis
     const id = String(formData.get("id") ?? "");
     const action = String(formData.get("action") ?? "");
 
-    if (id === actor.id) return { ok: false, error: "You can't change your own access here." };
+    if (id === actor.id && action !== "details") {
+      return { ok: false, error: "You can't change your own access here." };
+    }
 
     const target = await prisma.user.findUnique({
       where: { id },
-      select: { role: true, status: true },
+      select: { role: true, status: true, email: true },
     });
     if (!target) return { ok: false, error: "That account no longer exists." };
     if (actor.role !== "SUPERADMIN" && (target.role === "SUPERADMIN" || target.role === "ADMIN")) {
       return { ok: false, error: "Only a superadmin can change an admin." };
+    }
+
+    if (action === "details") {
+      if (actor.role !== "SUPERADMIN") {
+        return { ok: false, error: "Only a superadmin can change account details." };
+      }
+      const email = String(formData.get("email") ?? "").toLowerCase().trim();
+      const name = String(formData.get("name") ?? "").trim().slice(0, 80);
+      if (!email.includes("@") || email.length > 200) {
+        return { ok: false, error: "That email doesn't look right." };
+      }
+      const taken = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+      if (taken && taken.id !== id) return { ok: false, error: "That email is already used." };
+      await prisma.user.update({ where: { id }, data: { email, name: name || null } });
+      revalidatePath("/admin/users");
+      return { ok: true, message: `Saved ${email}.` };
     }
 
     if (action === "artistAccess") {
