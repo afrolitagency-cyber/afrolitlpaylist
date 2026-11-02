@@ -5,12 +5,14 @@ import { BlockNoteSchema, defaultBlockSpecs, filenameFromURL, type PartialBlock 
 import {
   EmbedTab,
   FilePanelController,
+  SuggestionMenuController,
   UploadTab,
   useBlockNoteEditor,
   useComponentsContext,
   useCreateBlockNote,
   type FilePanelProps,
 } from "@blocknote/react";
+import { offset, shift, size } from "@floating-ui/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { uploadEditorImage } from "@/lib/uploadImage";
 import { MediaLibraryPicker } from "./MediaLibraryPicker";
@@ -116,6 +118,25 @@ export function BlockEditorClient({
 
   const openLibrary = useCallback((blockId: string) => setLibraryBlockId(blockId), []);
   const libraryCtx = useMemo(() => ({ openLibrary }), [openLibrary]);
+  const slashMenuOptions = useMemo(
+    () => ({
+      useFloatingOptions: {
+        placement: "bottom-start" as const,
+        middleware: [
+          offset(10),
+          shift({ padding: 8 }),
+          size({
+            padding: 8,
+            apply({ elements, availableHeight }: { elements: { floating: HTMLElement }; availableHeight: number }) {
+              const cap = Math.min(420, Math.round(window.innerHeight * 0.6));
+              elements.floating.style.maxHeight = `${Math.max(0, Math.min(availableHeight, cap))}px`;
+            },
+          }),
+        ],
+      },
+    }),
+    [],
+  );
 
   if (!styled) return null;
 
@@ -128,8 +149,14 @@ export function BlockEditorClient({
           theme="dark"
           className="min-h-[340px] py-3"
           filePanel={false}
+          slashMenu={false}
           onChange={() => setSerialised(JSON.stringify(editor.document))}
         >
+          <SuggestionMenuController
+            triggerCharacter="/"
+            shouldOpen={(state) => !state.selection.$from.parent.type.isInGroup("tableContent")}
+            floatingUIOptions={slashMenuOptions}
+          />
           <FilePanelController filePanel={MediaAwareFilePanel} />
         </BlockNoteView>
       </div>
