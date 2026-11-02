@@ -85,6 +85,20 @@ main, aside, .grid > * { min-width: 0; }
   animation: vinyl-spin 7s linear infinite;
 }
 
+/* The block tool list was a scroll box capped to the space under the cursor,
+   so the wheel moved the options instead of the post. Leave the list at its
+   full height, and leave empty room under the last line so the editor itself
+   can scroll that line upward while more blocks are added. */
+.post-body-editor .bn-editor {
+  padding-bottom: 50vh;
+}
+.post-body-editor .bn-suggestion-menu,
+.post-body-editor div:has(> .bn-suggestion-menu) {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

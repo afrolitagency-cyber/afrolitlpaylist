@@ -121,7 +121,7 @@ export function BlockEditorClient({
 
   return (
     <LibraryPickerContext.Provider value={libraryCtx}>
-      <div className="rounded border border-(--border) bg-(--input-bg)">
+      <div className="post-body-editor rounded border border-(--border) bg-(--input-bg)">
         <input type="hidden" name={name} value={serialised} readOnly />
         <BlockNoteView
           editor={editor}
