@@ -116,6 +116,22 @@ export function BlockEditorClient({
     }
   }, [onFail]);
 
+  useEffect(() => {
+    const onWheel = (event: WheelEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      const menu = target instanceof Element ? target.closest(".bn-suggestion-menu") : target.parentElement?.closest(".bn-suggestion-menu");
+      if (!(menu instanceof HTMLElement) || !menu.closest(".post-body-editor")) return;
+      const room = menu.scrollHeight - menu.clientHeight;
+      if (room <= 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      menu.scrollTop = Math.min(room, Math.max(0, menu.scrollTop + event.deltaY));
+    };
+    document.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    return () => document.removeEventListener("wheel", onWheel, true);
+  }, []);
+
   const openLibrary = useCallback((blockId: string) => setLibraryBlockId(blockId), []);
   const libraryCtx = useMemo(() => ({ openLibrary }), [openLibrary]);
   const slashMenuOptions = useMemo(
@@ -129,11 +145,12 @@ export function BlockEditorClient({
             padding: 8,
             apply({ elements, availableHeight }: { elements: { floating: HTMLElement }; availableHeight: number }) {
               const cap = Math.min(420, Math.round(window.innerHeight * 0.6));
-              const height = Math.max(0, Math.min(availableHeight, cap));
+              const height = Math.max(160, Math.min(availableHeight, cap));
               const menu = elements.floating.querySelector(".bn-suggestion-menu");
               if (menu instanceof HTMLElement) {
-                menu.style.maxHeight = `${height}px`;
-                menu.style.overflowY = "auto";
+                menu.style.setProperty("max-height", `${height}px`, "important");
+                menu.style.setProperty("overflow-y", "scroll", "important");
+                menu.style.setProperty("height", "auto", "important");
               }
             },
           }),

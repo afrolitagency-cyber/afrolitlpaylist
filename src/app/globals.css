@@ -101,9 +101,18 @@ main, aside, .grid > * { min-width: 0; }
   box-sizing: border-box;
   height: auto !important;
   min-height: 0 !important;
-  max-height: min(420px, 60dvh);
-  overflow-y: auto !important;
+  max-height: min(420px, 60dvh) !important;
+  overflow-y: scroll !important;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #808080 transparent;
+}
+.post-body-editor .bn-mantine .bn-suggestion-menu::-webkit-scrollbar {
+  width: 8px;
+}
+.post-body-editor .bn-mantine .bn-suggestion-menu::-webkit-scrollbar-thumb {
+  background: #808080;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
