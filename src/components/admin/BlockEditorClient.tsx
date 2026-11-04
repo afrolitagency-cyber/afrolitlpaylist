@@ -129,7 +129,12 @@ export function BlockEditorClient({
             padding: 8,
             apply({ elements, availableHeight }: { elements: { floating: HTMLElement }; availableHeight: number }) {
               const cap = Math.min(420, Math.round(window.innerHeight * 0.6));
-              elements.floating.style.maxHeight = `${Math.max(0, Math.min(availableHeight, cap))}px`;
+              const height = Math.max(0, Math.min(availableHeight, cap));
+              const menu = elements.floating.querySelector(".bn-suggestion-menu");
+              if (menu instanceof HTMLElement) {
+                menu.style.maxHeight = `${height}px`;
+                menu.style.overflowY = "auto";
+              }
             },
           }),
         ],
