@@ -5,7 +5,7 @@ import { assertCron } from "@/lib/cron";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Keeps Neon warm so low-traffic hours don't cold-start the first real visitor. */
+/** Manual only. The daily noon schedule was removed so Neon can sleep. */
 export async function GET(req: Request) {
   const denied = assertCron(req);
   if (denied) return denied;
