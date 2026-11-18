@@ -3,6 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { normalizeEmbedUrl } from "@/lib/embedUrl";
+import { cloudinaryImageUrl, httpsUrl } from "@/lib/public-url";
 
 export const revalidate = 600;
 
@@ -34,7 +36,11 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
 
   if (!artist || artist.status !== "LIVE") notFound();
 
-  const socials = (artist.socials ?? {}) as Record<string, string>;
+  const socials = Object.entries((artist.socials ?? {}) as Record<string, string>).flatMap(([name, value]) => {
+    const href = httpsUrl(value);
+    return href ? [{ name, href }] : [];
+  });
+  const player = artist.streamEmbedUrl ? normalizeEmbedUrl(artist.streamEmbedUrl) : null;
 
   return (
     <div className="wrap py-8">
@@ -69,11 +75,11 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             </>
           ) : null}
 
-          {artist.streamEmbedUrl ? (
+          {player ? (
             <>
               <h2 className="mb-3 text-2xl font-extrabold">Listen</h2>
               <div className="mb-8 overflow-hidden rounded-lg">
-                <iframe src={artist.streamEmbedUrl} title={`${artist.name} player`} loading="lazy"
+                <iframe src={player} title={`${artist.name} player`} loading="lazy"
                   className="h-[180px] w-full border-0" allow="encrypted-media; clipboard-write" />
               </div>
             </>
@@ -83,16 +89,25 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
             <>
               <h2 className="mb-3 text-2xl font-extrabold">Discography</h2>
               <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {artist.discography.map((d: { id: string; title: string; type: string; coverArt: string | null; releaseDate: Date | null; streamUrl: string | null }) => (
-                  <a key={d.id} href={d.streamUrl ?? "#"} className="block">
-                    <div className="relative mb-2.5 aspect-square overflow-hidden rounded-lg bg-(--surface)">
-                      {d.coverArt ? <Image src={d.coverArt} alt="" fill sizes="200px" className="object-cover" /> : null}
-                    </div>
-                    <span className="text-[10.5px] font-extrabold uppercase text-(--primary)">{d.type}</span>
-                    <h4 className="text-sm font-bold">{d.title}</h4>
-                    {d.releaseDate ? <span className="text-xs text-(--sub-text)">{d.releaseDate.getFullYear()}</span> : null}
-                  </a>
-                ))}
+                {artist.discography.map((d: { id: string; title: string; type: string; coverArt: string | null; releaseDate: Date | null; streamUrl: string | null }) => {
+                  const cover = cloudinaryImageUrl(d.coverArt);
+                  const listen = httpsUrl(d.streamUrl);
+                  const card = (
+                    <>
+                      <div className="relative mb-2.5 aspect-square overflow-hidden rounded-lg bg-(--surface)">
+                        {cover ? <Image src={cover} alt="" fill sizes="200px" className="object-cover" /> : null}
+                      </div>
+                      <span className="text-[10.5px] font-extrabold uppercase text-(--primary)">{d.type}</span>
+                      <h4 className="text-sm font-bold">{d.title}</h4>
+                      {d.releaseDate ? <span className="text-xs text-(--sub-text)">{d.releaseDate.getFullYear()}</span> : null}
+                    </>
+                  );
+                  return listen ? (
+                    <a key={d.id} href={listen} target="_blank" rel="noopener noreferrer" className="block">{card}</a>
+                  ) : (
+                    <div key={d.id}>{card}</div>
+                  );
+                })}
               </div>
             </>
           ) : null}
@@ -137,14 +152,14 @@ export default async function ArtistPage({ params }: { params: Promise<{ slug: s
         </div>
 
         <aside className="space-y-5">
-          {Object.keys(socials).length ? (
+          {socials.length ? (
             <div className="rounded-xl bg-(--card-bg) p-5">
               <h3 className="mb-3.5 font-extrabold">Socials</h3>
               <div className="flex flex-wrap gap-2.5">
-                {Object.entries(socials).map(([k, v]) => (
-                  <a key={k} href={v} rel="noopener noreferrer" target="_blank"
+                {socials.map((social) => (
+                  <a key={social.name} href={social.href} rel="noopener noreferrer" target="_blank"
                     className="rounded-full border border-(--border-strong) px-3.5 py-2 text-[13px] font-semibold capitalize hover:border-(--primary) hover:text-(--primary)">
-                    {k}
+                    {social.name}
                   </a>
                 ))}
               </div>

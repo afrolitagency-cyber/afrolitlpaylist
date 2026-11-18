@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { normalizeEmbedUrl } from "@/lib/embedUrl";
 
 /**
  * The artist review loop.
@@ -55,6 +56,19 @@ export async function approve(artistId: string, actorId: string) {
   return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const current = await tx.artist.findUniqueOrThrow({ where: { id: artistId } });
     const pending = (current.pendingProfile ?? {}) as PendingProfile;
+
+    if ("streamEmbedUrl" in pending) {
+      const raw = pending.streamEmbedUrl;
+      if (typeof raw !== "string" || !raw.trim()) {
+        pending.streamEmbedUrl = null;
+      } else {
+        const safe = normalizeEmbedUrl(raw);
+        if (!safe) {
+          throw new Error("The music link has to be Spotify, YouTube, or Apple Music.");
+        }
+        pending.streamEmbedUrl = safe;
+      }
+    }
 
     // only whitelisted fields are merged — never spread the blob blindly
     const merged: Record<string, unknown> = {};

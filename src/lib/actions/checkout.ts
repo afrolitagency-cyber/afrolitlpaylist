@@ -1,9 +1,13 @@
 "use server";
 
+import crypto from "node:crypto";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { runAction, type ActionState } from "./_result";
 import { initializeTransaction, paystackConfigured } from "@/lib/paystack";
+import { releaseBuyerHoldsTx, releaseExpiredHolds } from "@/lib/holds";
+import { LIMITS, rateLimit } from "@/lib/rate-limit";
 import {
   HOLD_MS,
   MAX_TICKETS_PER_ORDER,
@@ -109,6 +113,20 @@ export async function startCheckout(_prev: ActionState, formData: FormData): Pro
     }
     if (event.soldOut) return { ok: false, error: "This event is sold out." };
 
+    await releaseExpiredHolds(event.id);
+
+    const emailHash = crypto.createHash("sha256").update(data.buyerEmail).digest("hex");
+    const headerList = await headers();
+    const ip = headerList.get("x-forwarded-for")?.split(",")[0]?.trim() || headerList.get("x-real-ip") || "unknown";
+    const ipHash = crypto.createHash("sha256").update(ip).digest("hex");
+    const [byEmail, byIp] = await Promise.all([
+      rateLimit(`checkout:${emailHash}`, LIMITS.checkout.max, LIMITS.checkout.windowSec),
+      rateLimit(`checkout-ip:${ipHash}`, LIMITS.checkoutIp.max, LIMITS.checkoutIp.windowSec),
+    ]);
+    if (!byEmail.ok || !byIp.ok) {
+      return { ok: false, error: "You've started several checkouts. Wait a while and try again." };
+    }
+
     const itemsSorted = [...data.items].sort((a, b) => a.tierId.localeCompare(b.tierId));
     const now = new Date();
     const reference = newOrderReference();
@@ -119,6 +137,8 @@ export async function startCheckout(_prev: ActionState, formData: FormData): Pro
 
     try {
       await prisma.$transaction(async (tx) => {
+        await releaseBuyerHoldsTx(tx, event.id, data.buyerEmail);
+
         const room = await tx.$executeRaw`
           UPDATE "Event"
           SET "ticketsHeld" = "ticketsHeld" + ${totalQty}
@@ -173,6 +193,7 @@ export async function startCheckout(_prev: ActionState, formData: FormData): Pro
       if (msg === "EVENT_FULL") return { ok: false, error: "The venue is full. Try fewer tickets." };
       if (msg.startsWith("TIER_FULL")) return { ok: false, error: "Those tickets just sold out or the window closed. Refresh and try again." };
       if (msg === "AMOUNT") return { ok: false, error: "That order total isn’t valid." };
+      if (msg === "HOLD_MISMATCH") return { ok: false, error: "We couldn't update the ticket hold. Try again." };
       throw err;
     }
 

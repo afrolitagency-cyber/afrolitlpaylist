@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { cloudinaryImageUrl, httpsUrl } from "@/lib/public-url";
 
 /**
  * One source per widget seen in the homepage templates. Each returns a plain
@@ -80,14 +81,15 @@ export const getNowPlaying = cache(async (): Promise<NowPlaying> => {
     orderBy: { releaseDate: "desc" },
     select: { title: true, coverArt: true, streamUrl: true, artist: { select: { name: true, slug: true } } },
   });
-  if (!release) return null;
+  const listen = release ? httpsUrl(release.streamUrl) : null;
+  if (!release || !listen) return null;
 
   return {
     title: release.title,
     artist: release.artist.name,
     artistSlug: release.artist.slug,
-    audioUrl: release.streamUrl,
-    image: release.coverArt,
+    audioUrl: listen,
+    image: cloudinaryImageUrl(release.coverArt),
   };
 });
 

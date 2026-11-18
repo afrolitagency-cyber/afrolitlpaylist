@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeEmbedUrl } from "@/lib/embedUrl";
 
 /** Empty datetime-local must not become 1970 via coerce.date(null). */
 export const optionalDate = z.preprocess((v) => {
@@ -40,7 +41,22 @@ export const artistProfileInput = z.object({
   bio: z.string().max(5000).optional().nullable(),
   coverImage: z.string().url().optional().nullable(),
   avatarImage: z.string().url().optional().nullable(),
-  streamEmbedUrl: z.string().url().optional().nullable(),
+  streamEmbedUrl: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value, ctx) => {
+      if (value == null || value.trim() === "") return null;
+      const safe = normalizeEmbedUrl(value);
+      if (!safe) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Use a Spotify, YouTube, or Apple Music link.",
+        });
+        return z.NEVER;
+      }
+      return safe;
+    }),
   socials: z.record(z.string(), z.string().url()).optional(),
 });
 

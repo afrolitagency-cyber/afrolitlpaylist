@@ -61,22 +61,33 @@ export default async function ReceiptPage({
   if (!order || order.event.slug !== slug) notFound();
 
   let status = order.status;
-  if (status === "PENDING") {
+  let paidAt = order.paidAt;
+  let refundNote = order.refundNote;
+  let ticketCount = order.tickets.length || order.items.reduce((n, i) => n + i.quantity, 0);
+  if (status === "PENDING" || status === "EXPIRED") {
     const settled = await fulfillPaidOrder(reference);
-    if (settled.ok) status = settled.order.status;
+    if (settled.ok) {
+      status = settled.order.status;
+      paidAt = settled.order.paidAt;
+      refundNote = settled.order.refundNote;
+      ticketCount = settled.order.tickets.length || ticketCount;
+    }
   }
 
   const tz = order.event.timezone;
   const venue = [order.event.venue, order.event.city].filter(Boolean).join(", ");
-  const ticketCount = order.tickets.length || order.items.reduce((n, i) => n + i.quantity, 0);
-  const issued = order.paidAt ?? order.createdAt;
+  const issued = paidAt ?? order.createdAt;
 
   if (status !== "PAID") {
     return (
       <div className={styles.body}>
         <div className={styles.wait}>
           <h1>Receipt</h1>
-          <p>This order is not paid yet. Complete payment to issue a receipt.</p>
+          <p>
+            {refundNote
+              ? "Paystack collected this payment after the hold ended, and those tickets had already been sold. Email hello@afrolitplaylist.com with this order reference."
+              : "This order is not paid yet. Complete payment to issue a receipt."}
+          </p>
           <p><Link href={`/events/${slug}/order/${order.reference}`}>Back to order</Link></p>
         </div>
       </div>
@@ -168,7 +179,7 @@ export default async function ReceiptPage({
           </div>
           <div>
             <div className={styles.lbl}>Paid on</div>
-            <div className={styles.val}>{order.paidAt ? fmtPaid(order.paidAt, tz) : fmtDay(issued, tz)}</div>
+            <div className={styles.val}>{paidAt ? fmtPaid(paidAt, tz) : fmtDay(issued, tz)}</div>
           </div>
           <div>
             <div className={styles.lbl}>Reference</div>

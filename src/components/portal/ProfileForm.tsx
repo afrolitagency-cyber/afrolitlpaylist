@@ -100,7 +100,7 @@ export function ProfileForm({ values, pendingReview }: { values: ProfileValues; 
         <div>
           <label className={label} htmlFor="streamEmbedUrl">Music embed URL</label>
           <input id="streamEmbedUrl" name="streamEmbedUrl" defaultValue={values.streamEmbedUrl}
-            placeholder="Spotify, Apple Music, YouTube or SoundCloud" className={field} />
+            placeholder="Spotify, YouTube, or Apple Music" className={field} />
         </div>
       </div>
 

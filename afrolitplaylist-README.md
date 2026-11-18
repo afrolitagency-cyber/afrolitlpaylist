@@ -286,6 +286,9 @@ Honest list, in the order I would address them:
 5. **GA4** is not wired; `/admin/analytics` reads our own `PageView` rows.
 6. **No accessibility audit.** Care has been taken (labels, `aria-live`, focus
    handling, reduced-motion) but nothing has been verified with a screen reader.
-7. **Event ticket payments** are deliberately deferred. `registrationUrl` links
-   out; free registration is handled in-app. Taking money needs the
-   merchant-of-record question answered first.
+7. **Event ticket payments** are built and waiting on Paystack. Checkout, holds,
+   verify-on-return, the charge webhook, QR email, and door scan are in.
+   Expired holds are released without a 5-minute cron. Refunds, comps,
+   settlement, and the public `/refunds` page wait until the business is
+   activated and the live secret key is in. See
+   `public/afrolit-TICKETING-PHASE-1.md` (“Where this stands”).

@@ -56,4 +56,8 @@ export const LIMITS = {
   viewOnce: { max: 1, windowSec: 24 * 60 * 60 },
   events: { max: 30, windowSec: 60 },
   ads: { max: 120, windowSec: 60 },
+  /** New checkouts per email. Stops one buyer stacking holds. */
+  checkout: { max: 5, windowSec: 60 * 60 },
+  /** New checkouts per address, so a buyer cannot dodge the email cap by changing it. */
+  checkoutIp: { max: 8, windowSec: 60 * 60 },
 } as const;

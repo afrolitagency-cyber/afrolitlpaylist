@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { saveRelease, deleteRelease } from "@/lib/actions/portal";
 import type { ActionState } from "@/lib/actions/_result";
+import { CoverImageField } from "@/components/admin/CoverImageField";
 
 const field = "w-full rounded border border-(--border) bg-(--input-bg) p-3 text-sm";
 const label = "mb-1.5 block text-xs font-bold";
@@ -39,7 +40,7 @@ export function DiscographyManager({ artistId, releases }: { artistId: string; r
         </p>
       ) : null}
 
-      <form action={save} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
+      <form key={editing?.id ?? "new"} action={save} className="rounded-xl border border-(--border-strong) bg-(--card-bg) p-5">
         <input type="hidden" name="artistId" value={artistId} />
         {editing ? <input type="hidden" name="id" value={editing.id} /> : null}
         <h2 className="mb-4 text-[15px] font-bold">{editing ? "Edit release" : "Add a release"}</h2>
@@ -65,10 +66,13 @@ export function DiscographyManager({ artistId, releases }: { artistId: string; r
             <label className={label} htmlFor="releaseDate">Release date</label>
             <input id="releaseDate" name="releaseDate" type="date" defaultValue={editing?.releaseDate ?? ""} className={field} />
           </div>
-          <div>
-            <label className={label} htmlFor="coverArt">Cover art URL</label>
-            <input id="coverArt" name="coverArt" defaultValue={editing?.coverArt ?? ""} className={field} />
-          </div>
+          <CoverImageField
+            name="coverArt"
+            label="Cover art"
+            defaultValue={editing?.coverArt ?? ""}
+            shape="tile"
+            hint="Upload the cover. Square works best."
+          />
         </div>
 
         <div className="mb-4">

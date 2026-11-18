@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/admin/Shell";
 import { EventForm, EventReview, UnpublishRequest, UnpublishReview, type EventValues } from "@/components/admin/EventForm";
 import { TicketTiersForm } from "@/components/admin/TicketTiersForm";
 import { readSchedule } from "@/lib/events";
+import { releaseExpiredHolds } from "@/lib/holds";
 import { bpsToPercent } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export default async function EventEditor({ params }: { params: Promise<{ id: st
   const user = await requireRoleFresh(...can.manageContent);
   const canPublish = user.role === "SUPERADMIN" || user.role === "ADMIN";
   const isNew = id === "new";
+  if (!isNew) await releaseExpiredHolds(id);
 
   const [event, series, artists, regs, tiers] = await Promise.all([
     isNew ? null : prisma.event.findUnique({ where: { id }, include: { lineup: { select: { id: true } } } }),

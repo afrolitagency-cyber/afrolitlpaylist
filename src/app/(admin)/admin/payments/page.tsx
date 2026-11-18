@@ -93,7 +93,6 @@ export default async function PaymentsPage({
           <li>Refunds (Paystack refund + void tickets + restock)</li>
           <li>Issue complimentary tickets from admin</li>
           <li>Settlement summary and mark paid-out</li>
-          <li>Release expired checkout holds (cron)</li>
           <li>Public /refunds policy page</li>
           <li>Door: scan-rate chart and optional offline queue</li>
         </ul>
@@ -175,7 +174,10 @@ export default async function PaymentsPage({
                   {o.items.map((i) => `${i.quantity}× ${i.tier.name}`).join(", ")}
                 </td>
                 <td className="px-4 py-3 font-bold">{formatKobo(o.totalKobo)}</td>
-                <td className="px-4 py-3"><StatusPill status={o.status} /></td>
+                <td className="px-4 py-3">
+                  <StatusPill status={o.status} />
+                  {o.refundNote ? <span className="mt-1 block max-w-52 text-xs text-(--sub-text)">{o.refundNote}</span> : null}
+                </td>
                 <td className="px-4 py-3">
                   <Link href={`/events/${o.event.slug}/order/${o.reference}`} className="font-mono text-xs underline" target="_blank">
                     {o.reference}

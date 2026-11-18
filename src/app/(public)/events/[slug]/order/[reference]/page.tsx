@@ -85,11 +85,13 @@ export default async function OrderPage({
 
   let status = order.status;
   let tickets = order.tickets;
-  if (status === "PENDING") {
+  let refundNote = order.refundNote;
+  if (status === "PENDING" || status === "EXPIRED") {
     const settled = await fulfillPaidOrder(reference);
     if (settled.ok) {
       status = settled.order.status;
       tickets = settled.order.tickets ?? tickets;
+      refundNote = settled.order.refundNote;
     }
   }
 
@@ -252,10 +254,18 @@ export default async function OrderPage({
             This page also checks Paystack once on load.
           </p>
         </div>
+      ) : refundNote ? (
+        <div className={styles.wait}>
+          <h2>Payment received, tickets gone</h2>
+          <p>
+            Paystack collected this payment after the 15-minute hold ended, and those tickets had already been sold.
+            Email <a href="mailto:hello@afrolitplaylist.com">hello@afrolitplaylist.com</a> with order {order.reference} and we will refund it.
+          </p>
+        </div>
       ) : (
         <div className={styles.wait}>
           <h2>This order is {status.toLowerCase()}</h2>
-          <p>If you still want tickets, start checkout again.</p>
+          <p>The hold has ended. Start checkout again if you still want tickets.</p>
         </div>
       )}
 

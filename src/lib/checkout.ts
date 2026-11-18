@@ -1,6 +1,7 @@
 import { remaining } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { formatTime } from "@/lib/events";
+import { releaseExpiredHolds } from "@/lib/holds";
 import { HOLD_MS, MAX_TICKETS_PER_ORDER } from "@/lib/ticket-limits";
 
 export { HOLD_MS, MAX_TICKETS_PER_ORDER };
@@ -77,6 +78,7 @@ export function classifyTier(
 }
 
 export async function listCheckoutTiers(eventId: string, timeZone: string): Promise<CheckoutTier[]> {
+  await releaseExpiredHolds(eventId);
   const rows = await prisma.ticketTier.findMany({
     where: { eventId, active: true, isComp: false },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],

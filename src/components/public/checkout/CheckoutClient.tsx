@@ -195,7 +195,8 @@ export function CheckoutClient({
                 <button type="button" className={styles.back} onClick={() => setStep(2)}>← Details</button>
                 <h2>Payment</h2>
                 <p className={styles.note}>
-                  You&apos;ll pay on Paystack (card, transfer, or USSD). We hold your tickets for 15 minutes.
+                  You&apos;ll pay on Paystack (card, transfer, or USSD). We hold your tickets for 15 minutes,
+                  then put them back on sale. Starting checkout again releases the earlier hold.
                   Tickets are issued only after Paystack confirms the charge — not when this page redirects.
                 </p>
                 {!paystackReady ? (

@@ -111,7 +111,7 @@ export function ArtistForm({ values, canInvite }: { values: ArtistFormValues; ca
               id="streamEmbedUrl"
               name="streamEmbedUrl"
               defaultValue={values.streamEmbedUrl}
-              placeholder="Spotify, Apple Music, YouTube or SoundCloud"
+              placeholder="Spotify, YouTube, or Apple Music"
               className={field}
             />
           </div>

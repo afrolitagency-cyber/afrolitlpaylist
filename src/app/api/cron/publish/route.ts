@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { assertCron } from "@/lib/cron";
+import { releaseExpiredHolds } from "@/lib/holds";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,5 +36,10 @@ export async function GET(req: Request) {
     revalidatePath("/events");
   }
 
-  return NextResponse.json({ published: { posts: posts.length, episodes: episodes.length, events: events.length } });
+  const releasedHolds = await releaseExpiredHolds();
+
+  return NextResponse.json({
+    published: { posts: posts.length, episodes: episodes.length, events: events.length },
+    releasedHolds,
+  });
 }

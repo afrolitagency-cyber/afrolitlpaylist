@@ -6,7 +6,42 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireOwnArtist, requireSession } from "@/lib/rbac";
 import { acceptInvite } from "@/lib/services/invite";
+import { cloudinaryImageUrl, httpsUrl } from "@/lib/public-url";
 import { runAction, type ActionState } from "./_result";
+
+const optionalCover = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((value, ctx) => {
+    if (value == null || value.trim() === "") return null;
+    const safe = cloudinaryImageUrl(value);
+    if (!safe) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Upload the cover. A pasted link is not accepted.",
+      });
+      return z.NEVER;
+    }
+    return safe;
+  });
+
+const optionalStream = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((value, ctx) => {
+    if (value == null || value.trim() === "") return null;
+    const safe = httpsUrl(value);
+    if (!safe) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The streaming link has to start with https://.",
+      });
+      return z.NEVER;
+    }
+    return safe;
+  });
 
 const releaseInput = z.object({
   id: z.string().cuid().optional(),
@@ -14,8 +49,8 @@ const releaseInput = z.object({
   title: z.string().min(1).max(200),
   type: z.enum(["SINGLE", "EP", "ALBUM", "MIXTAPE"]),
   releaseDate: z.coerce.date().optional().nullable(),
-  coverArt: z.string().url().optional().nullable(),
-  streamUrl: z.string().url().optional().nullable(),
+  coverArt: optionalCover,
+  streamUrl: optionalStream,
 });
 
 export async function acceptInviteAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -72,8 +107,13 @@ export async function saveRelease(_prev: ActionState, formData: FormData): Promi
       await prisma.discography.create({ data: { ...payload, artistId: data.artistId } });
     }
 
+    const artist = await prisma.artist.findUnique({
+      where: { id: data.artistId },
+      select: { slug: true },
+    });
     revalidateTag("artists");
     revalidatePath("/portal/discography");
+    if (artist) revalidatePath(`/artists/${artist.slug}`);
     return { ok: true, message: "Saved — this is live on your page now." };
   });
 }

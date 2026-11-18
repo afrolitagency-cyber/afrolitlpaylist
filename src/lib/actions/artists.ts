@@ -52,7 +52,16 @@ export async function decideReview(_prev: ActionState, formData: FormData): Prom
       note: formData.get("note") || undefined,
     });
 
-    if (input.decision === "APPROVED") await approve(input.artistId, actor.id);
+    if (input.decision === "APPROVED") {
+      try {
+        await approve(input.artistId, actor.id);
+      } catch (err) {
+        if (err instanceof Error && err.message.startsWith("The music link")) {
+          return { ok: false, error: err.message };
+        }
+        throw err;
+      }
+    }
     else if (input.decision === "REJECTED") await reject(input.artistId, actor.id, input.note);
     else await requestChanges(input.artistId, actor.id, input.note ?? "");
 

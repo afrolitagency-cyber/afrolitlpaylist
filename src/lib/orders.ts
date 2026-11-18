@@ -13,6 +13,9 @@ function holderList(meta: Record<string, unknown> | null, qty: number, fallback:
   return Array.from({ length: qty }, (_, i) => names[i] || fallback);
 }
 
+const LATE_PAYMENT_NOTE =
+  "Paystack collected this payment after the hold expired, and the tickets were no longer available.";
+
 export async function fulfillPaidOrder(reference: string) {
   const existing = await prisma.order.findUnique({
     where: { reference },
@@ -20,6 +23,9 @@ export async function fulfillPaidOrder(reference: string) {
   });
   if (!existing) return { ok: false as const, reason: "missing" };
   if (existing.status === "PAID") return { ok: true as const, order: existing };
+  if (existing.status !== "PENDING" && existing.status !== "EXPIRED") {
+    return { ok: false as const, reason: "closed" };
+  }
 
   const verified = await verifyTransaction(reference);
   if (!verified.success) return { ok: false as const, reason: "unpaid" };
@@ -27,63 +33,108 @@ export async function fulfillPaidOrder(reference: string) {
     return { ok: false as const, reason: "amount" };
   }
 
-  const names = holderList(verified.metadata, existing.items.reduce((n, i) => n + i.quantity, 0), existing.buyerName);
+  const totalQty = existing.items.reduce((n, i) => n + i.quantity, 0);
+  const names = holderList(verified.metadata, totalQty, existing.buyerName);
+  const items = [...existing.items].sort((a, b) => a.tierId.localeCompare(b.tierId));
+  const paidData = {
+    status: "PAID" as const,
+    paidAt: new Date(),
+    feesKobo: verified.feesKobo,
+    holdsUntil: null,
+    refundNote: null,
+  };
 
-  const order = await prisma.$transaction(async (tx) => {
-    const claimed = await tx.order.updateMany({
-      where: { id: existing.id, status: "PENDING" },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        feesKobo: verified.feesKobo,
-        holdsUntil: null,
-      },
-    });
-    if (claimed.count !== 1) {
-      return {
-        issued: false as const,
-        order: await tx.order.findUniqueOrThrow({ where: { id: existing.id }, include: { items: true, tickets: true } }),
-      };
-    }
+  let settled: { issued: boolean; order: typeof existing };
+  try {
+    settled = await prisma.$transaction(async (tx) => {
+      const reload = () => tx.order.findUniqueOrThrow({
+        where: { id: existing.id },
+        include: { items: true, tickets: true },
+      });
 
-    const totalQty = existing.items.reduce((n, i) => n + i.quantity, 0);
-    const moved = await tx.$executeRaw`
-      UPDATE "Event"
-      SET "ticketsHeld" = "ticketsHeld" - ${totalQty},
-          "ticketsSold" = "ticketsSold" + ${totalQty}
-      WHERE id = ${existing.eventId}
-        AND "ticketsHeld" >= ${totalQty}
-    `;
-    if (Number(moved) !== 1) throw new Error("Could not settle event inventory.");
-
-    let nameIndex = 0;
-    const tickets: { eventId: string; orderId: string; tierId: string; code: string; holderName: string }[] = [];
-    for (const item of existing.items) {
-      const shifted = await tx.$executeRaw`
-        UPDATE "TicketTier"
-        SET held = held - ${item.quantity},
-            sold = sold + ${item.quantity}
-        WHERE id = ${item.tierId}
-          AND held >= ${item.quantity}
-      `;
-      if (Number(shifted) !== 1) throw new Error("Could not settle tier inventory.");
-      for (let i = 0; i < item.quantity; i += 1) {
-        tickets.push({
-          eventId: existing.eventId,
-          orderId: existing.id,
-          tierId: item.tierId,
-          code: ticketCode(),
-          holderName: names[nameIndex] || existing.buyerName,
+      const fromHold = await tx.order.updateMany({
+        where: { id: existing.id, status: "PENDING" },
+        data: paidData,
+      });
+      if (fromHold.count === 1) {
+        const moved = await tx.$executeRaw`
+          UPDATE "Event"
+          SET "ticketsHeld" = "ticketsHeld" - ${totalQty},
+              "ticketsSold" = "ticketsSold" + ${totalQty}
+          WHERE id = ${existing.eventId}
+            AND "ticketsHeld" >= ${totalQty}
+        `;
+        if (Number(moved) !== 1) throw new Error("Could not settle event inventory.");
+        for (const item of items) {
+          const shifted = await tx.$executeRaw`
+            UPDATE "TicketTier"
+            SET held = held - ${item.quantity},
+                sold = sold + ${item.quantity}
+            WHERE id = ${item.tierId}
+              AND held >= ${item.quantity}
+          `;
+          if (Number(shifted) !== 1) throw new Error("Could not settle tier inventory.");
+        }
+      } else {
+        const fromExpired = await tx.order.updateMany({
+          where: { id: existing.id, status: "EXPIRED" },
+          data: paidData,
         });
-        nameIndex += 1;
+        if (fromExpired.count !== 1) {
+          return { issued: false, order: await reload() };
+        }
+        const moved = await tx.$executeRaw`
+          UPDATE "Event"
+          SET "ticketsSold" = "ticketsSold" + ${totalQty}
+          WHERE id = ${existing.eventId}
+            AND (capacity IS NULL OR (capacity - "ticketsSold" - "ticketsHeld") >= ${totalQty})
+        `;
+        if (Number(moved) !== 1) throw new Error("STOCK");
+        for (const item of items) {
+          const shifted = await tx.$executeRaw`
+            UPDATE "TicketTier"
+            SET sold = sold + ${item.quantity}
+            WHERE id = ${item.tierId}
+              AND (allocation - sold - held) >= ${item.quantity}
+          `;
+          if (Number(shifted) !== 1) throw new Error("STOCK");
+        }
       }
-    }
-    await tx.ticket.createMany({ data: tickets });
-    return { issued: true as const, order: await tx.order.findUniqueOrThrow({ where: { id: existing.id }, include: { items: true, tickets: true } }) };
-  });
 
-  const paid = order.order;
-  if (order.issued) {
+      let nameIndex = 0;
+      const tickets: { eventId: string; orderId: string; tierId: string; code: string; holderName: string }[] = [];
+      for (const item of items) {
+        for (let i = 0; i < item.quantity; i += 1) {
+          tickets.push({
+            eventId: existing.eventId,
+            orderId: existing.id,
+            tierId: item.tierId,
+            code: ticketCode(),
+            holderName: names[nameIndex] || existing.buyerName,
+          });
+          nameIndex += 1;
+        }
+      }
+      await tx.ticket.createMany({ data: tickets });
+      return { issued: true, order: await reload() };
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "STOCK") {
+      await prisma.order.updateMany({
+        where: { id: existing.id, status: "EXPIRED", refundNote: null },
+        data: { refundNote: LATE_PAYMENT_NOTE },
+      });
+      const order = await prisma.order.findUniqueOrThrow({
+        where: { id: existing.id },
+        include: { items: true, tickets: true },
+      });
+      return { ok: true as const, order, unavailable: true as const };
+    }
+    throw err;
+  }
+
+  const paid = settled.order;
+  if (settled.issued) {
     try {
       const full = await prisma.order.findUnique({
         where: { id: paid.id },
