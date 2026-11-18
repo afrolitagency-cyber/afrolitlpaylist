@@ -25,12 +25,13 @@ export async function POST(req: Request) {
 
     const sessionId = str(body.sessionId, 64);
     const userAgent = h.get("user-agent");
+    if (looksLikeBot({ userAgent, referrer: null, sessionId })) return ok();
     await track({
       name,
       path: str(body.path, 300),
       entityId: str(body.entityId, 64),
       sessionId,
-      isBot: looksLikeBot({ userAgent, referrer: null, sessionId }),
+      isBot: false,
     });
     return ok();
   } catch {

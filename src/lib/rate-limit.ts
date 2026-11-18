@@ -52,6 +52,8 @@ export const LIMITS = {
   contact: { max: 3, windowSec: 60 * 60 },
   register: { max: 5, windowSec: 60 * 60 },
   views: { max: 60, windowSec: 60 },
+  /** One counted read of the same post per address per day. Repeats are not written. */
+  viewOnce: { max: 1, windowSec: 24 * 60 * 60 },
   events: { max: 30, windowSec: 60 },
   ads: { max: 120, windowSec: 60 },
 } as const;

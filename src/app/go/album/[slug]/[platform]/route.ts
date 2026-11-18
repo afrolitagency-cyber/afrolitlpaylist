@@ -31,14 +31,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     const h = req.headers;
     const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "unknown";
     const limit = await rateLimit(`events:${ip}`, LIMITS.events.max, LIMITS.events.windowSec);
-    if (limit.ok) {
-      const referrer = h.get("referer");
+    const referrer = h.get("referer");
+    if (limit.ok && !looksLikeBot({ userAgent: h.get("user-agent"), referrer, sessionId: "click" })) {
       await track({
         name: "album_listen_click",
         entityId: album.id,
         label: platform,
         path: referrer ? new URL(referrer).pathname.slice(0, 300) : null,
-        isBot: looksLikeBot({ userAgent: h.get("user-agent"), referrer, sessionId: null }),
+        isBot: false,
       });
     }
   } catch {

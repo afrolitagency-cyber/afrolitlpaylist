@@ -8,8 +8,35 @@ import { getSessionId } from "@/lib/session-id";
  * so viewCount cannot be incremented during render. The count is written from
  * the client instead, fire-and-forget, decoupled from the page's caching.
  */
+const SEEN_KEY = "al_seen_views";
+
+function alreadyCounted(path: string): boolean {
+  try {
+    const raw = localStorage.getItem(SEEN_KEY);
+    const list: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) && list.includes(path);
+  } catch {
+    return false;
+  }
+}
+
+function remember(path: string) {
+  try {
+    const raw = localStorage.getItem(SEEN_KEY);
+    const list: unknown = raw ? JSON.parse(raw) : [];
+    const next = (Array.isArray(list) ? list.filter((item) => item !== path) : []) as string[];
+    next.push(path);
+    localStorage.setItem(SEEN_KEY, JSON.stringify(next.slice(-300)));
+  } catch {
+    /* private mode: the server still counts this reader once per day */
+  }
+}
+
 export function ViewBeacon({ postId, path }: { postId?: string; path: string }) {
   useEffect(() => {
+    if (alreadyCounted(path)) return;
+    remember(path);
+
     let referrer: string | null = null;
     try {
       if (document.referrer) {
